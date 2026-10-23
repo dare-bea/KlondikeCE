@@ -48,8 +48,12 @@ static bool new_keys[INPUT_KEYS_COUNT] = {0};
 int step(void) {
         if (new_keys[IKIdx_Enter]) {
                 if (!cursor.holding_cards) {
-                        cursor.holding_cards = true;
-                        cursor.from_pos = cursor.pos;
+                        if (cursor.pos == TABLEAU_PILES
+                            ? game.stock_waste.length != game.stock_remaining
+                            : game.tableau_piles[cursor.pos].length) {
+                                cursor.holding_cards = true;
+                                cursor.from_pos = cursor.pos;
+                        }
                 } else if (cursor.from_pos == cursor.pos) {
                         cursor.holding_cards = false;
                 } else if (cursor.from_pos < TABLEAU_PILES && cursor.pos < TABLEAU_PILES) {
@@ -259,6 +263,7 @@ int draw(void) {
         gfx_SwapDraw();
         return 0;
 }
+
 #ifdef CRASH_DUMP
 int dump_snprintf(char *__restrict__ buffer, size_t count, size_t *index, const char *__restrict__ format, ...) {
         va_list va;
