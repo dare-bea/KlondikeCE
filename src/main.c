@@ -78,10 +78,11 @@ int step(void) {
                 cursor.holding_cards = false;
         }
         if (new_keys[IKIdx_Trace]) {
-                if (cursor.pos == TABLEAU_PILES) {
+                size_t pos = cursor.holding_cards ? cursor.from_pos : cursor.pos;
+                if (pos == TABLEAU_PILES) {
                         int8_t move_res = KlondikeGame_move_wf(&game);
                         if (move_res == 1) {
-                                // just condition's side effect, for now
+                                cursor.holding_cards = false;
                         } else if (move_res < 0) {
                                 return 5;
                         } else if (!cursor.holding_cards) {
@@ -93,7 +94,7 @@ int step(void) {
                                 }
                         }
                 } else {
-                        int8_t move_res = KlondikeGame_move_tf(&game, cursor.pos);
+                        int8_t move_res = KlondikeGame_move_tf(&game, pos);
                         if (move_res == 1) {
                                 // just movement, for now
                         } else if (move_res < 0) {
