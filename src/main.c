@@ -26,10 +26,10 @@ static const char CARDSUIT_SYMBOLS[] = "\x80\x81\x82\x83";
 
 #define INPUT_KEYS_COUNT 5
 enum InputKeyIndex {
-        IKIdx_Left, IKIdx_Right, IKIdx_Enter, IKIdx_Trace, IKIdx_Graph,
+        IKIdx_Left, IKIdx_Right, IKIdx_Enter, IKIdx_Trace, IKIdx_Graph, IKIdx_Clear
 };
 static const kb_lkey_t INPUT_KEYS[INPUT_KEYS_COUNT] = {
-        kb_KeyLeft, kb_KeyRight, kb_KeyEnter, kb_KeyTrace, kb_KeyGraph,
+        kb_KeyLeft, kb_KeyRight, kb_KeyEnter, kb_KeyTrace, kb_KeyGraph, IKIdx_Clear
 };
 
 static int errno = 0;
@@ -73,6 +73,9 @@ int step(void) {
                                 return 5;
                         }
                 }
+        }
+        if (new_keys[IKIdx_Clear]) {
+                cursor.holding_cards = false;
         }
         if (new_keys[IKIdx_Trace]) {
                 if (cursor.pos < TABLEAU_PILES) {
@@ -290,7 +293,7 @@ int main(void)
                 errno = 1, errline = __LINE__;
         }
 
-        while (!errno && !kb_On && !kb_IsDown(kb_KeyClear)) {
+        while (!errno && !kb_On && !kb_IsDown(kb_KeyMode)) {
                 for (size_t i = 0; i < INPUT_KEYS_COUNT; ++i) {
                         if (pressed_keys[i]) {
                                 pressed_keys[i] = kb_IsDown(INPUT_KEYS[i]);
