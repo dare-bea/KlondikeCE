@@ -264,8 +264,7 @@ int draw(void) {
 
         /* CURSOR */
 
-#ifdef SHOW_MOVE_AVAILABLITY
-        bool move_found;
+        bool move_found = true;
         if (cursor.holding_cards) {
                 if (cursor.pos == cursor.from_pos) {
                         move_found = true;
@@ -277,7 +276,9 @@ int draw(void) {
                         move_found = KlondikeGame_can_move_tt(&game,
                                 cursor.from_pos, cursor.pos);
                 }
-        } else if (cursor.pos < TABLEAU_PILES) {
+        }
+#ifdef SHOW_MOVE_AVAILABLITY
+        else if (cursor.pos < TABLEAU_PILES) {
                 move_found = KlondikeGame_can_move_tf(&game, cursor.pos);
                 if (!move_found) for (size_t c = 0; c < TABLEAU_PILES; ++c) {
                         if (KlondikeGame_can_move_tt(&game, cursor.pos, c)) {
@@ -294,8 +295,6 @@ int draw(void) {
                         }
                 }
         }
-#else
-        bool move_found = true;
 #endif
 
         if (cursor.pos != TABLEAU_PILES) {
