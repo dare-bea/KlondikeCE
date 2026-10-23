@@ -1,0 +1,11 @@
+.vscode/
+.mypy_cache/
+obj/
+bin/
+src/.tmp/
+src/fonts/
+src/gfx/**.c
+src/gfx/**.h
+src/gfx/convimg.yaml.lst
+__pycache__
+.DS_Store

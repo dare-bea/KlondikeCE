@@ -1,0 +1,30 @@
+palettes:
+  - name: gamepalette
+    fixed-entries:
+      - color: {index: 1, hex: "#FFFFFF"} # WHITE
+      - color: {index: 2, hex: "#44AA55"} # GREEN
+      - color: {index: 3, hex: "#222222"} # BLACK
+      - color: {index: 4, hex: "#00007b"} # SPADES
+      - color: {index: 5, hex: "#ea337f"} # HEARTS
+      - color: {index: 6, hex: "#377e22"} # CLUBS
+      - color: {index: 7, hex: "#ef8750"} # DIAMONDS
+    images: automatic
+
+converts:
+  - name: rletsprites
+    palette: gamepalette
+    transparent-color-index: 0
+    images:
+      - card_front.png
+      - card_back.png
+      - cursor_pointer_up.png
+      - cursor_pointer_down.png
+    style: rlet
+
+outputs:
+  - type: c
+    include-file: gfx.h
+    palettes:
+      - gamepalette
+    converts:
+      - rletsprites
