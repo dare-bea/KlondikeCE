@@ -84,6 +84,13 @@ int step(void) {
                                 // just condition's side effect, for now
                         } else if (move_res < 0) {
                                 return 5;
+                        } else if (!cursor.holding_cards) {
+                                for (size_t c = 0; c < TABLEAU_PILES; ++c) {
+                                        if (KlondikeGame_can_move_tf(&game, c)) {
+                                                cursor.pos = c;
+                                                break;
+                                        }
+                                }
                         }
                 } else {
                         int8_t move_res = KlondikeGame_move_tf(&game, cursor.pos);
@@ -91,6 +98,19 @@ int step(void) {
                                 // just movement, for now
                         } else if (move_res < 0) {
                                 return 5;
+                        } else if (!cursor.holding_cards) {
+                                bool found_foundation_movable = false;
+                                for (size_t c = 0; c < TABLEAU_PILES; ++c) {
+                                        if (KlondikeGame_can_move_tf(&game, c)) {
+                                                found_foundation_movable = true;
+                                                cursor.pos = c;
+                                                break;
+                                        }
+                                }
+                                if (!found_foundation_movable && KlondikeGame_can_move_wf(&game)) {
+                                        found_foundation_movable = true;
+                                        cursor.pos = TABLEAU_PILES;
+                                }
                         }
                 }
         }
@@ -291,7 +311,7 @@ int draw(void) {
 
         fontlib_SetFont(font8x8, 0);
         fontlib_SetTransparency(true);
-        fontlib_SetCursorPosition(GFX_LCD_WIDTH / 2, GFX_LCD_HEIGHT - 8 - 8);
+        fontlib_SetCursorPosition(GFX_LCD_WIDTH / 2, GFX_LCD_HEIGHT - 8 - 4);
         fontlib_SetForegroundColor(GAMEPALETTE_WHITE);
         /* WINNING/LOSS */
         if (KlondikeGame_is_won(&game)) {
