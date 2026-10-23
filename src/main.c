@@ -24,12 +24,12 @@
 static const char CARDRANK_SYMBOLS[] = "A23456789\x7FJQK";
 static const char CARDSUIT_SYMBOLS[] = "\x80\x81\x82\x83";
 
-#define INPUT_KEYS_COUNT 5
+#define INPUT_KEYS_COUNT 6
 enum InputKeyIndex {
         IKIdx_Left, IKIdx_Right, IKIdx_Enter, IKIdx_Trace, IKIdx_Graph, IKIdx_Clear
 };
 static const kb_lkey_t INPUT_KEYS[INPUT_KEYS_COUNT] = {
-        kb_KeyLeft, kb_KeyRight, kb_KeyEnter, kb_KeyTrace, kb_KeyGraph, IKIdx_Clear
+        kb_KeyLeft, kb_KeyRight, kb_KeyEnter, kb_KeyTrace, kb_KeyGraph, kb_KeyClear
 };
 
 static int errno = 0;
