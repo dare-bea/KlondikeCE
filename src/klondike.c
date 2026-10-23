@@ -91,7 +91,7 @@ bool KlondikeGame_init(struct KlondikeGame *game) {
 }
 
 __attribute__((nonnull(1)))
-static inline bool _KlondikeGame_can_move_t(struct KlondikeGame *game,
+static inline bool _KlondikeGame_can_move_xt(struct KlondikeGame *game,
         struct Card *from_card, size_t to_pile, bool empties_pile) {
         if (!from_card || TABLEAU_PILES <= to_pile)
                 return false;
@@ -103,7 +103,7 @@ static inline bool _KlondikeGame_can_move_t(struct KlondikeGame *game,
 }
 
 __attribute__((nonnull(1)))
-static inline bool _KlondikeGame_can_move_f(struct KlondikeGame *game, struct Card *from_card) {
+static inline bool _KlondikeGame_can_move_xf(struct KlondikeGame *game, struct Card *from_card) {
         if (!from_card)
                 return false;
         if (!game->foundations[from_card->suit].has_cards)
@@ -153,7 +153,7 @@ bool KlondikeGame_can_make_move(struct KlondikeGame *game) {
                 if (KlondikeGame_can_move_tf(game, ta))
                         return true;
                 for (size_t w = 0; w < game->stock_waste.length; ++w) {
-                        if (_KlondikeGame_can_move_t(game,
+                        if (_KlondikeGame_can_move_xt(game,
                             Vector_structCard_at(&game->stock_waste, w),
                             ta, false))
                                 return true;
@@ -164,7 +164,7 @@ bool KlondikeGame_can_make_move(struct KlondikeGame *game) {
                 }
         }
         for (size_t w = 0; w < game->stock_waste.length; ++w) {
-                if (_KlondikeGame_can_move_f(game,
+                if (_KlondikeGame_can_move_xf(game,
                     Vector_structCard_at(&game->stock_waste, w)))
                         return true;
         }
@@ -184,7 +184,7 @@ bool KlondikeGame_can_move_tt(struct KlondikeGame *game, size_t from_pile, size_
         assert(KlondikeGame_invariants_hold(game));
         struct Card *from_card = Vector_structCard_at(&game->tableau_piles[from_pile],
                 game->tableau_down[from_pile]);
-        return _KlondikeGame_can_move_t(game, from_card, to_pile, !game->tableau_down[from_pile]);
+        return _KlondikeGame_can_move_xt(game, from_card, to_pile, !game->tableau_down[from_pile]);
 }
 
 __attribute__((nonnull(1)))
@@ -194,7 +194,7 @@ bool KlondikeGame_can_move_wt(struct KlondikeGame *game, size_t to_pile) {
         assert(KlondikeGame_invariants_hold(game));
         struct Card *from_card = Vector_structCard_at(&game->stock_waste,
                 game->stock_remaining);
-        return _KlondikeGame_can_move_t(game, from_card, to_pile, false);
+        return _KlondikeGame_can_move_xt(game, from_card, to_pile, false);
 }
 
 __attribute__((nonnull(1)))
@@ -203,7 +203,7 @@ bool KlondikeGame_can_move_tf(struct KlondikeGame *game, size_t from_pile) {
                 return false;
         assert(KlondikeGame_invariants_hold(game));
         struct Card *from_card = Vector_structCard_last(&game->tableau_piles[from_pile]);
-        return _KlondikeGame_can_move_f(game, from_card);
+        return _KlondikeGame_can_move_xf(game, from_card);
 }
 
 __attribute__((nonnull(1)))
@@ -211,7 +211,7 @@ bool KlondikeGame_can_move_wf(struct KlondikeGame *game) {
         assert(KlondikeGame_invariants_hold(game));
         struct Card *from_card = Vector_structCard_at(&game->stock_waste,
                 game->stock_remaining);
-        return _KlondikeGame_can_move_f(game, from_card);
+        return _KlondikeGame_can_move_xf(game, from_card);
 }
 
 __attribute__((nonnull(1)))

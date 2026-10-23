@@ -56,7 +56,7 @@ int step(void) {
                         }
                 } else if (cursor.from_pos == cursor.pos) {
                         cursor.holding_cards = false;
-                } else if (cursor.from_pos < TABLEAU_PILES && cursor.pos < TABLEAU_PILES) {
+                } else if (cursor.from_pos != TABLEAU_PILES && cursor.pos != TABLEAU_PILES) {
                         int8_t move_res = KlondikeGame_move_tt(
                                 &game, cursor.from_pos, cursor.pos);
                         if (move_res == 1) {
@@ -64,7 +64,7 @@ int step(void) {
                         } else if (move_res < 0) {
                                 return 5;
                         }
-                } else if (cursor.from_pos == TABLEAU_PILES && cursor.pos < TABLEAU_PILES) {
+                } else if (cursor.from_pos == TABLEAU_PILES && cursor.pos != TABLEAU_PILES) {
                         int8_t move_res = KlondikeGame_move_wt(
                                 &game, cursor.pos);
                         if (move_res == 1) {
@@ -78,17 +78,17 @@ int step(void) {
                 cursor.holding_cards = false;
         }
         if (new_keys[IKIdx_Trace]) {
-                if (cursor.pos < TABLEAU_PILES) {
-                        int8_t move_res = KlondikeGame_move_tf(&game, cursor.pos);
-                        if (move_res == 1) {
-                                // just movement, for now
-                        } else if (move_res < 0) {
-                                return 5;
-                        }
-                } else if (cursor.pos == TABLEAU_PILES) {
+                if (cursor.pos == TABLEAU_PILES) {
                         int8_t move_res = KlondikeGame_move_wf(&game);
                         if (move_res == 1) {
                                 // just condition's side effect, for now
+                        } else if (move_res < 0) {
+                                return 5;
+                        }
+                } else {
+                        int8_t move_res = KlondikeGame_move_tf(&game, cursor.pos);
+                        if (move_res == 1) {
+                                // just movement, for now
                         } else if (move_res < 0) {
                                 return 5;
                         }
@@ -106,7 +106,7 @@ int step(void) {
                 if (0 < cursor.pos)
                         --cursor.pos;
         } else if (!new_keys[IKIdx_Left] && new_keys[IKIdx_Right]) {
-                if (cursor.pos < TABLEAU_PILES)
+                if (cursor.pos != TABLEAU_PILES)
                         ++cursor.pos;
         }
         return 0;
@@ -242,12 +242,49 @@ int draw(void) {
         }
 
         /* CURSOR */
-        if (cursor.pos < TABLEAU_PILES) {
-                gfx_RLETSprite(cursor_pointer_down,
+
+#ifdef SHOW_MOVE_AVAILABLITY
+        bool move_found;
+        if (cursor.holding_cards) {
+                if (cursor.pos == cursor.from_pos) {
+                        move_found = true;
+                } else if (cursor.pos == TABLEAU_PILES) {
+                        move_found = false;
+                } else if (cursor.from_pos == TABLEAU_PILES) {
+                        move_found = KlondikeGame_can_move_wt(&game, cursor.pos);
+                } else {
+                        move_found = KlondikeGame_can_move_tt(&game,
+                                cursor.from_pos, cursor.pos);
+                }
+        } else if (cursor.pos < TABLEAU_PILES) {
+                move_found = KlondikeGame_can_move_tf(&game, cursor.pos);
+                if (!move_found) for (size_t c = 0; c < TABLEAU_PILES; ++c) {
+                        if (KlondikeGame_can_move_tt(&game, cursor.pos, c)) {
+                                move_found = true;
+                                break;
+                        }
+                }
+        } else {
+                move_found = KlondikeGame_can_move_wf(&game);
+                if (!move_found) for (size_t c = 0; c < TABLEAU_PILES; ++c) {
+                        if (KlondikeGame_can_move_wt(&game, c)) {
+                                move_found = true;
+                                break;
+                        }
+                }
+        }
+#else
+        bool move_found = true;
+#endif
+
+        if (cursor.pos != TABLEAU_PILES) {
+                gfx_RLETSprite(!move_found ? cursor_denied
+                        : cursor.holding_cards ? cursor_pointer_down : cursor_pointer_up,
                         cursor.pos * 32 + 8 + card_back_width / 2 - cursor_pointer_down_width / 2,
                         16 - cursor_pointer_down_height - 2);
         } else {
-                gfx_RLETSprite(cursor_pointer_down,
+                gfx_RLETSprite(!move_found ? cursor_denied
+                        : cursor.holding_cards ? cursor_pointer_down : cursor_pointer_up,
                         240 + card_back_width / 2 - cursor_pointer_down_width / 2,
                         24 - cursor_pointer_down_height - 2);
         }
