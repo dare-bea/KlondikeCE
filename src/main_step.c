@@ -1,6 +1,7 @@
 #include "klondike.h"
 
 #include <keypadc.h>
+#include <time.h>
 
 extern struct KlondikeGame game;
 extern struct {
@@ -19,10 +20,27 @@ static const kb_lkey_t INPUT_KEYS[INPUT_KEYS_COUNT] = {
 };
 
 static bool pressed_keys[INPUT_KEYS_COUNT] = {0};
+static clock_t auto_repeat[INPUT_KEYS_COUNT] = {0};
 static bool new_keys[INPUT_KEYS_COUNT] = {0};
 
 int step(void) {
-        for (size_t i = 0; i < INPUT_KEYS_COUNT; ++i) {
+        clock_t const now = clock();
+        for (enum InputKeyIndex i = IKIdx_Left; i < IKIdx_Enter; ++i) {
+                if (pressed_keys[i]) {
+                        pressed_keys[i] = kb_IsDown(INPUT_KEYS[i]);
+                        if ((double)auto_repeat[i] - (double)now < 0) {
+                                new_keys[i] = true;
+                                auto_repeat[i] = now + (CLOCKS_PER_SEC * 1/8);
+                        } else {
+                                new_keys[i] = false;
+                        }
+                } else {
+                        pressed_keys[i] = kb_IsDown(INPUT_KEYS[i]);
+                        auto_repeat[i] = now + (CLOCKS_PER_SEC * 1/3);
+                        new_keys[i] = pressed_keys[i];
+                }
+        }
+        for (enum InputKeyIndex i = IKIdx_Enter; i < INPUT_KEYS_COUNT; ++i) {
                 if (pressed_keys[i]) {
                         pressed_keys[i] = kb_IsDown(INPUT_KEYS[i]);
                         new_keys[i] = false;
@@ -112,11 +130,9 @@ int step(void) {
                 }
         }
         if (new_keys[IKIdx_Left] && !new_keys[IKIdx_Right]) {
-                if (0 < cursor.pos)
-                        --cursor.pos;
+                cursor.pos = (cursor.pos - 1) % (TABLEAU_PILES + 1);
         } else if (!new_keys[IKIdx_Left] && new_keys[IKIdx_Right]) {
-                if (cursor.pos != TABLEAU_PILES)
-                        ++cursor.pos;
+                cursor.pos = (cursor.pos + 1) % (TABLEAU_PILES + 1);
         }
         return 0;
 }
