@@ -271,16 +271,19 @@ int draw(void) {
         }
 
         /* DEBUG INFO */
-        fontlib_SetFont(font4x8, 0);
         fontlib_SetCursorPosition(4, GFX_LCD_HEIGHT - 8 - 4);
-        fontlib_DrawString("[cursor] hold=");
+        fontlib_SetFont(font6x8, 0);
+        fontlib_DrawString("Moves: ");
+        fontlib_DrawUInt(move_count, 1);
+#ifdef DEBUG_CURSOR_INFO
+        fontlib_SetFont(font4x8, 0);
+        fontlib_DrawString(" -- [cursor] hold=");
         fontlib_DrawUInt(cursor.holding_cards, 1);
         fontlib_DrawString(" pos=");
         fontlib_DrawUInt(cursor.pos, 1);
         fontlib_DrawString(" from=");
         fontlib_DrawUInt(cursor.from_pos, 1);
-        fontlib_DrawString(" [moves] ");
-        fontlib_DrawUInt(move_count, 1);
+#endif
 
         gfx_SwapDraw();
         return 0;
