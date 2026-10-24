@@ -36,6 +36,7 @@ enum {
 } game_status = GAME_ONGOING;
 
 #define CURSOR_WASTE_POS (TABLEAU_PILES)
+#define CURSOR_STOCK_POS (TABLEAU_PILES + 1)
 
 unsigned move_count;
 uintmax_t game_secs;

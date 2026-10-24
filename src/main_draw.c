@@ -20,6 +20,7 @@ extern enum {
 } game_status;
 
 #define CURSOR_WASTE_POS (TABLEAU_PILES)
+#define CURSOR_STOCK_POS (TABLEAU_PILES + 1)
 
 extern unsigned move_count;
 extern uintmax_t game_secs;
@@ -66,7 +67,7 @@ int draw(void) {
         for (size_t c = 0; c < TABLEAU_PILES; ++c) {
                 size_t len = game.tableau_piles[c].length;
                 if (cursor.holding_cards && cursor.pos != cursor.from_pos && cursor.pos == c) {
-                        if (cursor.from_pos == CURSOR_WASTE_POS) {
+                        if (cursor.from_pos >= CURSOR_WASTE_POS) {
                                 ++len;
                         } else {
                                 len += game.tableau_piles[cursor.from_pos].length - game.tableau_down[cursor.from_pos];
@@ -152,7 +153,7 @@ int draw(void) {
         }
 
         // Waste
-        if (cursor.holding_cards && cursor.from_pos == CURSOR_WASTE_POS) {
+        if (cursor.holding_cards && cursor.from_pos == CURSOR_WASTE_POS && cursor.pos <= CURSOR_WASTE_POS) {
                 struct Card const *waste_card = Vector_structCard_at_const(
                         &game.stock_waste,
                         game.stock_remaining + (cursor.pos == CURSOR_WASTE_POS ? 0 : 1));
@@ -184,7 +185,7 @@ int draw(void) {
                                 DIM_TABLE_X + DIM_TABLE_DX * c,
                                 DIM_TABLE_Y + row_off * r);
                 }
-                if (!cursor.holding_cards || c != cursor.from_pos || cursor.pos == CURSOR_WASTE_POS) {
+                if (!cursor.holding_cards || c != cursor.from_pos || cursor.pos >= CURSOR_WASTE_POS) {
                         for (size_t r = game.tableau_down[c]; r < game.tableau_piles[c].length; ++r) {
                                 struct Card const *card = Vector_structCard_at_const(
                                         &game.tableau_piles[c], r);
@@ -197,16 +198,8 @@ int draw(void) {
         }
 
         // Held cards in tableau
-        if (cursor.holding_cards && cursor.pos != CURSOR_WASTE_POS) {
-                if (cursor.from_pos == CURSOR_WASTE_POS) {
-                        size_t r = game.tableau_piles[cursor.pos].length;
-                        struct Card const *card = Vector_structCard_at_const(&game.stock_waste,
-                                game.stock_remaining);
-                        if (!card) return __LINE__;
-                        render_card(card,
-                                DIM_TABLE_X + DIM_TABLE_DX * cursor.pos,
-                                DIM_TABLE_Y + row_off * r - DIM_HOLDCARD_YOFF);
-                } else {
+        if (cursor.holding_cards && cursor.pos < TABLEAU_PILES) {
+                if (cursor.from_pos < TABLEAU_PILES) {
                         for (size_t r = game.tableau_down[cursor.from_pos]; r < game.tableau_piles[cursor.from_pos].length; ++r) {
                                 size_t r_adjusted = cursor.from_pos == cursor.pos ? r
                                         : r - game.tableau_down[cursor.from_pos] + game.tableau_piles[cursor.pos].length;
@@ -217,6 +210,14 @@ int draw(void) {
                                         DIM_TABLE_X + DIM_TABLE_DX * cursor.pos,
                                         DIM_TABLE_Y + row_off * r_adjusted - DIM_HOLDCARD_YOFF);
                         }
+                } else {
+                        size_t r = game.tableau_piles[cursor.pos].length;
+                        struct Card const *card = Vector_structCard_at_const(&game.stock_waste,
+                                game.stock_remaining);
+                        if (!card) return __LINE__;
+                        render_card(card,
+                                DIM_TABLE_X + DIM_TABLE_DX * cursor.pos,
+                                DIM_TABLE_Y + row_off * r - DIM_HOLDCARD_YOFF);
                 }
         }
 
@@ -225,7 +226,7 @@ int draw(void) {
         if (cursor.holding_cards) {
                 if (cursor.pos == cursor.from_pos) {
                         move_found = true;
-                } else if (cursor.pos == CURSOR_WASTE_POS) {
+                } else if (cursor.pos >= CURSOR_WASTE_POS) {
                         move_found = false;
                 } else if (cursor.from_pos == CURSOR_WASTE_POS) {
                         move_found = KlondikeGame_can_move_wt(&game, cursor.pos);
@@ -234,7 +235,15 @@ int draw(void) {
                                 cursor.from_pos, cursor.pos);
                 }
         }
-#ifdef SHOW_MOVE_AVAILABLITY
+#ifndef SHOW_MOVE_AVAILABLITY
+        else if (cursor.pos < TABLEAU_PILES) {
+                move_found = game.tableau_piles[cursor.pos].length;
+        } else if (cursor.pos == CURSOR_WASTE_POS) {
+                move_found = game.stock_waste.length != game.stock_remaining;
+        } else if (cursor.pos == CURSOR_STOCK_POS) {
+                move_found = game.stock_waste.length;
+        }
+#else
         else if (cursor.pos < TABLEAU_PILES) {
                 move_found = KlondikeGame_can_move_tf(&game, cursor.pos);
                 if (!move_found) for (size_t c = 0; c < TABLEAU_PILES; ++c) {
@@ -243,7 +252,7 @@ int draw(void) {
                                 break;
                         }
                 }
-        } else {
+        } else if (cursor.pos == CURSOR_WASTE_POS) {
                 move_found = KlondikeGame_can_move_wf(&game);
                 if (!move_found) for (size_t c = 0; c < TABLEAU_PILES; ++c) {
                         if (KlondikeGame_can_move_wt(&game, c)) {
@@ -251,31 +260,48 @@ int draw(void) {
                                 break;
                         }
                 }
+        } else if (cursor.pos == CURSOR_STOCK_POS) {
+                move_found = game.stock_waste.length;
         }
 #endif
 
         /* RENDER CURSOR */
-        if (cursor.pos != CURSOR_WASTE_POS) {
-                unsigned cursor_y = DIM_TABLE_Y - 2
-                        - (!move_found ? cursor_denied_height
-                        : cursor.holding_cards ? cursor_pointer_down_height : cursor_pointer_up_height);
-                if (cursor.holding_cards && cursor.pos == cursor.from_pos && game.tableau_down[cursor.pos] == 0)
+        if (cursor.pos < TABLEAU_PILES) {
+                unsigned cursor_x = DIM_TABLE_X + DIM_TABLE_DX * cursor.pos
+                        + card_back_width / 2 - cursor_pointer_down_width / 2;
+                unsigned cursor_y = DIM_TABLE_Y - 2 - (
+                                !move_found ? cursor_denied_height
+                                : cursor.holding_cards ? cursor_pointer_down_height
+                                : cursor_pointer_up_height);
+                if (cursor.holding_cards && cursor.pos == cursor.from_pos
+                    && game.tableau_down[cursor.pos] == 0)
                         cursor_y -= DIM_HOLDCARD_YOFF;
-                else if (cursor.holding_cards && cursor.pos != cursor.from_pos && game.tableau_piles[cursor.pos].length == 0)
+                else if (cursor.holding_cards && cursor.pos != cursor.from_pos
+                    && game.tableau_piles[cursor.pos].length == 0)
                         cursor_y -= DIM_HOLDCARD_YOFF;
                 gfx_RLETSprite(!move_found ? cursor_denied
-                        : cursor.holding_cards ? cursor_pointer_down : cursor_pointer_up,
-                        DIM_TABLE_X + DIM_TABLE_DX * cursor.pos + card_back_width / 2 - cursor_pointer_down_width / 2,
+                                : cursor.holding_cards ? cursor_pointer_down
+                                : cursor_pointer_up,
+                        cursor_x,
                         cursor_y);
         } else {
-                unsigned cursor_y = DIM_WASTE_Y - 2
-                        - (!move_found ? cursor_denied_height
-                        : cursor.holding_cards ? cursor_pointer_down_height : cursor_pointer_up_height);
+                unsigned cursor_x = (cursor.pos == CURSOR_STOCK_POS
+                                ? DIM_STOCK_X : DIM_WASTE_X)
+                        + card_back_width / 2 - cursor_pointer_down_width / 2;
+                unsigned cursor_y = DIM_WASTE_Y - 2 - (
+                        !move_found ? cursor_denied_height
+                        : cursor.holding_cards ? cursor_pointer_down_height
+                        : cursor.pos == CURSOR_STOCK_POS && !game.stock_remaining
+                                ? cursor_pointer_down_height
+                        : cursor_pointer_up_height);
                 if (cursor.holding_cards && cursor.pos == cursor.from_pos)
                         cursor_y -= DIM_HOLDCARD_YOFF;
                 gfx_RLETSprite(!move_found ? cursor_denied
-                        : cursor.holding_cards ? cursor_pointer_down : cursor_pointer_up,
-                        DIM_WASTE_X + card_back_width / 2 - cursor_pointer_down_width / 2,
+                                : cursor.holding_cards ? cursor_pointer_down
+                                : cursor.pos == CURSOR_STOCK_POS && !game.stock_remaining
+                                        ? cursor_pointer_down
+                                : cursor_pointer_up,
+                        cursor_x,
                         cursor_y);
         }
 
