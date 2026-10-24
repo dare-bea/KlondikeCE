@@ -38,6 +38,16 @@ static const char CARDSUIT_SYMBOLS[CARDSUIT_COUNT + 1] = "\x80\x81\x82\x83";
 #define DIM_CARDINFO_YOFF 3
 #define DIM_HOLDCARD_YOFF 4
 
+__attribute__((nonnull))
+static inline void render_card(struct Card const *card, unsigned x, uint8_t y) {
+        fontlib_SetFont(font8x8, 0);
+        fontlib_SetForegroundColor(GAMEPALETTE_SPADES + card->suit);
+        fontlib_SetCursorPosition(x + (card_front_width / 2) - 8, y + DIM_CARDINFO_YOFF);
+        gfx_RLETSprite(card_front, x, y);
+        fontlib_DrawGlyph(CARDRANK_SYMBOLS[card->rank]);
+        fontlib_DrawGlyph(CARDSUIT_SYMBOLS[card->suit]);
+}
+
 int draw(void) {
         /* CALCULATE TABLEAU LENGTH */
         size_t tab_len = 0;
@@ -112,15 +122,12 @@ int draw(void) {
         // Foundations
         for (enum CardSuit suit = 0; suit < CARDSUIT_COUNT; ++suit) {
                 if (game.foundations[suit].has_cards) {
-                        gfx_RLETSprite(card_front,
+                        render_card(&(struct Card) {
+                                        .rank = game.foundations[suit].top_rank,
+                                        .suit = suit,
+                                },
                                 DIM_FOUND_X + DIM_FOUND_DX * (suit % 2),
                                 DIM_FOUND_Y + DIM_FOUND_DY * (suit / 2));
-                        fontlib_SetForegroundColor(GAMEPALETTE_SPADES + suit);
-                        fontlib_SetCursorPosition(
-                                DIM_FOUND_X + DIM_FOUND_DX * (suit % 2) + (card_front_width / 2) - 8,
-                                DIM_FOUND_Y + DIM_FOUND_DY * (suit / 2) + DIM_CARDINFO_YOFF);
-                        fontlib_DrawGlyph(CARDRANK_SYMBOLS[game.foundations[suit].top_rank]);
-                        fontlib_DrawGlyph(CARDSUIT_SYMBOLS[suit]);
                 }
         }
 
@@ -133,29 +140,15 @@ int draw(void) {
                         if (game.stock_waste.length - game.stock_remaining > 1) {
                                 gfx_RLETSprite(card_front, DIM_WASTE_X, DIM_WASTE_Y);
                         }
-                        gfx_RLETSprite(card_front, DIM_WASTE_X, DIM_WASTE_Y
-                                - (cursor.pos == TABLEAU_PILES ? DIM_HOLDCARD_YOFF : 0));
-                        fontlib_SetForegroundColor(GAMEPALETTE_SPADES + waste_card->suit);
-                        fontlib_SetCursorPosition(
-                                DIM_WASTE_X + (card_front_width / 2) - 8,
-                                DIM_WASTE_Y + DIM_CARDINFO_YOFF 
-                                - (cursor.pos == TABLEAU_PILES ? DIM_HOLDCARD_YOFF : 0));
-                        fontlib_SetFont(font8x8, 0);
-                        fontlib_DrawGlyph(CARDRANK_SYMBOLS[waste_card->rank]);
-                        fontlib_DrawGlyph(CARDSUIT_SYMBOLS[waste_card->suit]);
+                        render_card(waste_card,
+                                DIM_WASTE_X,
+                                DIM_WASTE_Y - (cursor.pos == TABLEAU_PILES ? DIM_HOLDCARD_YOFF : 0));
                 }
         } else {
                 struct Card const *waste_card = Vector_structCard_at_const(
                         &game.stock_waste, game.stock_remaining);
                 if (waste_card) {
-                        gfx_RLETSprite(card_front, DIM_WASTE_X, DIM_WASTE_Y);
-                        fontlib_SetForegroundColor(GAMEPALETTE_SPADES + waste_card->suit);
-                        fontlib_SetCursorPosition(
-                                DIM_WASTE_X + (card_front_width / 2) - 8,
-                                DIM_WASTE_Y + DIM_CARDINFO_YOFF);
-                        fontlib_SetFont(font8x8, 0);
-                        fontlib_DrawGlyph(CARDRANK_SYMBOLS[waste_card->rank]);
-                        fontlib_DrawGlyph(CARDSUIT_SYMBOLS[waste_card->suit]);
+                        render_card(waste_card, DIM_WASTE_X, DIM_WASTE_Y);
                 }
         }
 
@@ -176,15 +169,9 @@ int draw(void) {
                                 struct Card const *card = Vector_structCard_at_const(
                                         &game.tableau_piles[c], r);
                                 if (!card) return __LINE__;
-                                gfx_RLETSprite(card_front,
+                                render_card(card,
                                         DIM_TABLE_X + DIM_TABLE_DX * c,
                                         DIM_TABLE_Y + row_off * r);
-                                fontlib_SetForegroundColor(GAMEPALETTE_SPADES + card->suit);
-                                fontlib_SetCursorPosition(
-                                        DIM_TABLE_X + DIM_TABLE_DX * c + (card_front_width / 2) - 8,
-                                        DIM_TABLE_Y + row_off * r + DIM_CARDINFO_YOFF);
-                                fontlib_DrawGlyph(CARDRANK_SYMBOLS[card->rank]);
-                                fontlib_DrawGlyph(CARDSUIT_SYMBOLS[card->suit]);
                         }
                 }
         }
@@ -196,15 +183,9 @@ int draw(void) {
                         struct Card const *card = Vector_structCard_at_const(&game.stock_waste,
                                 game.stock_remaining);
                         if (!card) return __LINE__;
-                        gfx_RLETSprite(card_front,
+                        render_card(card,
                                 DIM_TABLE_X + DIM_TABLE_DX * cursor.pos,
                                 DIM_TABLE_Y + row_off * r - DIM_HOLDCARD_YOFF);
-                        fontlib_SetForegroundColor(GAMEPALETTE_SPADES + card->suit);
-                        fontlib_SetCursorPosition(
-                                DIM_TABLE_X + DIM_TABLE_DX * cursor.pos + (card_front_width / 2) - 8,
-                                DIM_TABLE_Y + row_off * r + DIM_CARDINFO_YOFF - DIM_HOLDCARD_YOFF);
-                        fontlib_DrawGlyph(CARDRANK_SYMBOLS[card->rank]);
-                        fontlib_DrawGlyph(CARDSUIT_SYMBOLS[card->suit]);
                 } else {
                         for (size_t r = game.tableau_down[cursor.from_pos]; r < game.tableau_piles[cursor.from_pos].length; ++r) {
                                 size_t r_adjusted = cursor.from_pos == cursor.pos ? r
@@ -212,15 +193,9 @@ int draw(void) {
                                 struct Card const *card = Vector_structCard_at_const(
                                         &game.tableau_piles[cursor.from_pos], r);
                                 if (!card) return __LINE__;
-                                gfx_RLETSprite(card_front,
+                                render_card(card,
                                         DIM_TABLE_X + DIM_TABLE_DX * cursor.pos,
                                         DIM_TABLE_Y + row_off * r_adjusted - DIM_HOLDCARD_YOFF);
-                                fontlib_SetForegroundColor(GAMEPALETTE_SPADES + card->suit);
-                                fontlib_SetCursorPosition(
-                                        DIM_TABLE_X + DIM_TABLE_DX * cursor.pos + (card_front_width / 2) - 8,
-                                        DIM_TABLE_Y + row_off * r_adjusted + DIM_CARDINFO_YOFF - DIM_HOLDCARD_YOFF);
-                                fontlib_DrawGlyph(CARDRANK_SYMBOLS[card->rank]);
-                                fontlib_DrawGlyph(CARDSUIT_SYMBOLS[card->suit]);
                         }
                 }
         }
