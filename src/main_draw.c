@@ -318,7 +318,7 @@ int draw(void) {
 
         /* SHOW MESSAGE FOR WINNING OR LOSING */
         fontlib_SetFont(font8x8, 0);
-        fontlib_SetCursorPosition(GFX_LCD_WIDTH / 3, GFX_LCD_HEIGHT - 8 - 4);
+        fontlib_ShiftCursorPosition(12, 0);
         if (game_status == GAME_WON) {
                 fontlib_DrawString("GAME WON!");
         } else if (game_status == GAME_LOST) {
