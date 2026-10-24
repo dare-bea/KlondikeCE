@@ -22,6 +22,7 @@
  * `CRASH_DUMP` - Dump the game struct when some assertion fails
  * `SHOW_MOVE_AVAILABLITY` - Calculate and show if a move is available from the
  *      hovered tableau/waste pile when you are not holding it.
+ * `DEBUG_CURSOR_INFO` - Show cursor debug information
  */
 
 #define INPUT_KEYS_COUNT 6
@@ -158,6 +159,8 @@ int main(void)
         gfx_Begin();
         gfx_SetPalette(gamepalette, sizeof_gamepalette, 0);
         gfx_SetDrawBuffer();
+        fontlib_SetNewlineOptions(FONTLIB_ENABLE_AUTO_WRAP);
+        fontlib_SetLineSpacing(0, 1);
         kb_SetMode(MODE_3_CONTINUOUS);
         kb_EnableOnLatch();
         kb_ClearOnLatch();
@@ -212,8 +215,6 @@ int main(void)
 #ifdef CRASH_DUMP
                 fontlib_SetFont(font4x6, 0);
                 fontlib_SetCursorPosition(0, 48);
-                fontlib_SetNewlineOptions(FONTLIB_ENABLE_AUTO_WRAP);
-                fontlib_SetLineSpacing(0, 1);
                 char buf[512];
                 size_t bufidx = 0;
 #pragma clang diagnostic push

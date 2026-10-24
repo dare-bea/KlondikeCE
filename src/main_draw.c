@@ -38,6 +38,9 @@ static const char CARDSUIT_SYMBOLS[CARDSUIT_COUNT + 1] = "\x80\x81\x82\x83";
 #define DIM_CARDINFO_YOFF 3
 #define DIM_HOLDCARD_YOFF 4
 
+#define DIM_CONTROLINFO_X (DIM_TABLE_X + DIM_TABLE_DX * TABLEAU_PILES)
+#define DIM_CONTROLINFO_Y (DIM_FOUND_Y + DIM_FOUND_DY * 2 - 10)
+
 __attribute__((nonnull(1)))
 static inline void render_card(struct Card const *card, unsigned x, uint8_t y) {
         fontlib_SetFont(font8x8, 0);
@@ -72,6 +75,14 @@ int draw(void) {
         fontlib_SetTransparency(true);
         gfx_SetColor(GAMEPALETTE_WHITE);
         gfx_FillScreen(GAMEPALETTE_GREEN);
+
+        /* CONTROL INFORMATION */
+        fontlib_SetFont(font4x8, 0);
+        fontlib_SetLineSpacing(0, 1);
+        fontlib_SetWindow(DIM_CONTROLINFO_X, DIM_CONTROLINFO_Y, GFX_LCD_WIDTH - DIM_CONTROLINFO_X, GFX_LCD_HEIGHT - DIM_CONTROLINFO_Y);
+        fontlib_SetCursorPosition(DIM_CONTROLINFO_X, DIM_CONTROLINFO_Y);
+        fontlib_DrawString("ENTER: Select/Move\nCLEAR: Deselect\nF4: Play to foundation\nF5: Draw from stock\nON/MODE: Quit");
+        fontlib_SetWindowFullScreen();
 
         /* DRAW BLANK LOCATIONS */
         fontlib_SetFont(font8x8, 0);
@@ -259,30 +270,32 @@ int draw(void) {
                         cursor_y);
         }
 
+        fontlib_SetForegroundColor(GAMEPALETTE_WHITE);
+
+        /* MOVE COUNTER */
+        fontlib_SetCursorPosition(4, GFX_LCD_HEIGHT - 8 - 4);
+        fontlib_SetFont(font6x8, 0);
+        fontlib_DrawString("Moves: ");
+        fontlib_DrawUInt(move_count, 1);
+
         /* SHOW MESSAGE FOR WINNING OR LOSING */
         fontlib_SetFont(font8x8, 0);
-        fontlib_SetTransparency(true);
-        fontlib_SetCursorPosition(GFX_LCD_WIDTH * 3 / 4, GFX_LCD_HEIGHT - 8 - 4);
-        fontlib_SetForegroundColor(GAMEPALETTE_WHITE);
+        fontlib_SetCursorPosition(GFX_LCD_WIDTH / 3, GFX_LCD_HEIGHT - 8 - 4);
         if (KlondikeGame_is_won(&game)) {
                 fontlib_DrawString("GAME WON!");
         } else if (!KlondikeGame_can_make_move(&game)) {
                 fontlib_DrawString("GAME UNSOLVABLE!");
         }
-
-        /* DEBUG INFO */
-        fontlib_SetCursorPosition(4, GFX_LCD_HEIGHT - 8 - 4);
-        fontlib_SetFont(font6x8, 0);
-        fontlib_DrawString("Moves: ");
-        fontlib_DrawUInt(move_count, 1);
 #ifdef DEBUG_CURSOR_INFO
-        fontlib_SetFont(font4x8, 0);
-        fontlib_DrawString(" -- [cursor] hold=");
-        fontlib_DrawUInt(cursor.holding_cards, 1);
-        fontlib_DrawString(" pos=");
-        fontlib_DrawUInt(cursor.pos, 1);
-        fontlib_DrawString(" from=");
-        fontlib_DrawUInt(cursor.from_pos, 1);
+        else {
+                fontlib_SetFont(font4x8, 0);
+                fontlib_DrawString(" -- [cursor] hold=");
+                fontlib_DrawUInt(cursor.holding_cards, 1);
+                fontlib_DrawString(" pos=");
+                fontlib_DrawUInt(cursor.pos, 1);
+                fontlib_DrawString(" from=");
+                fontlib_DrawUInt(cursor.from_pos, 1);
+        }
 #endif
 
         gfx_SwapDraw();
