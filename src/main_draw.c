@@ -13,7 +13,14 @@ extern struct {
         bool holding_cards;
         size_t from_pos; // from_pos == TABLEAU_PILES: Waste
 } cursor;
+extern enum {
+        GAME_ONGOING,
+        GAME_WON,
+        GAME_LOST
+} game_status;
+
 extern unsigned move_count;
+extern uintmax_t game_secs;
 
 static const char CARDRANK_SYMBOLS[CARDRANK_COUNT + 1] = "A23456789\x7FJQK";
 static const char CARDSUIT_SYMBOLS[CARDSUIT_COUNT + 1] = "\x80\x81\x82\x83";
@@ -38,7 +45,7 @@ static const char CARDSUIT_SYMBOLS[CARDSUIT_COUNT + 1] = "\x80\x81\x82\x83";
 #define DIM_CARDINFO_YOFF 3
 #define DIM_HOLDCARD_YOFF 4
 
-#define DIM_CONTROLINFO_X (DIM_TABLE_X + DIM_TABLE_DX * TABLEAU_PILES)
+#define DIM_CONTROLINFO_X (DIM_TABLE_X + DIM_TABLE_DX * TABLEAU_PILES - 3)
 #define DIM_CONTROLINFO_Y (DIM_FOUND_Y + DIM_FOUND_DY * 2 - 10)
 
 __attribute__((nonnull(1)))
@@ -275,15 +282,18 @@ int draw(void) {
         /* MOVE COUNTER */
         fontlib_SetCursorPosition(4, GFX_LCD_HEIGHT - 8 - 4);
         fontlib_SetFont(font6x8, 0);
-        fontlib_DrawString("Moves: ");
         fontlib_DrawUInt(move_count, 1);
+        fontlib_DrawString(" Moves  ");
+        fontlib_DrawUInt(game_secs / 60, 1);
+        fontlib_DrawGlyph(':');
+        fontlib_DrawUInt(game_secs % 60, 2);
 
         /* SHOW MESSAGE FOR WINNING OR LOSING */
         fontlib_SetFont(font8x8, 0);
         fontlib_SetCursorPosition(GFX_LCD_WIDTH / 3, GFX_LCD_HEIGHT - 8 - 4);
-        if (KlondikeGame_is_won(&game)) {
+        if (game_status == GAME_WON) {
                 fontlib_DrawString("GAME WON!");
-        } else if (!KlondikeGame_can_make_move(&game)) {
+        } else if (game_status == GAME_LOST) {
                 fontlib_DrawString("GAME UNSOLVABLE!");
         }
 #ifdef DEBUG_CURSOR_INFO

@@ -29,7 +29,15 @@ struct {
         bool holding_cards;
         size_t from_pos; // from_pos == TABLEAU_PILES: Waste
 } cursor = {0};
+enum {
+        GAME_ONGOING,
+        GAME_WON,
+        GAME_LOST
+} game_status = GAME_ONGOING;
+
 unsigned move_count;
+uintmax_t game_secs;
+clock_t game_start;
 
 static int errno = 0;
 static int errline = 0;
@@ -60,6 +68,7 @@ int main(void)
                 errno = 1, errline = __LINE__;
         }
 
+        game_start = clock();
         while (!errno && !kb_On && !kb_IsDown(kb_KeyMode)) {
                 errline = step();
                 if (errline) {
