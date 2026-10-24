@@ -38,7 +38,7 @@ static const char CARDSUIT_SYMBOLS[CARDSUIT_COUNT + 1] = "\x80\x81\x82\x83";
 #define DIM_CARDINFO_YOFF 3
 #define DIM_HOLDCARD_YOFF 4
 
-__attribute__((nonnull))
+__attribute__((nonnull(1)))
 static inline void render_card(struct Card const *card, unsigned x, uint8_t y) {
         fontlib_SetFont(font8x8, 0);
         fontlib_SetForegroundColor(GAMEPALETTE_SPADES + card->suit);
