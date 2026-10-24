@@ -1,17 +1,10 @@
 #include "klondike.h"
 
-#include <assert.h>
-#include <limits.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
 
 #include <graphx.h>
 #include "gfx/gfx.h"
-#include "gfx/card_front.h"
-#include "gfx/card_back.h"
-#include "gfx/cursor_pointer_up.h"
-#include "gfx/cursor_pointer_down.h"
 #include "gamepalette_colors.h"
 
 #include <keypadc.h>
@@ -21,8 +14,15 @@
 
 #include <sys/timers.h>
 
-static const char CARDRANK_SYMBOLS[] = "A23456789\x7FJQK";
-static const char CARDSUIT_SYMBOLS[] = "\x80\x81\x82\x83";
+#ifdef CRASH_DUMP
+#include <stdio.h>
+#endif
+
+/* -- COMPILE TIME FLAGS --
+ * `CRASH_DUMP` - Dump the game struct when some assertion fails
+ * `SHOW_MOVE_AVAILABLITY` - Calculate and show if a move is available from the
+ *      hovered tableau/waste pile when you are not holding it.
+ */
 
 #define INPUT_KEYS_COUNT 6
 enum InputKeyIndex {
@@ -35,12 +35,13 @@ static const kb_lkey_t INPUT_KEYS[INPUT_KEYS_COUNT] = {
 static int errno = 0;
 static int errline = 0;
 
-static struct KlondikeGame game;
-static struct {
+struct KlondikeGame game;
+struct {
         size_t pos; // pos == TABLEAU_PILES: Waste
         bool holding_cards;
         size_t from_pos; // from_pos == TABLEAU_PILES: Waste
 } cursor = {0};
+unsigned move_count;
 
 static bool pressed_keys[INPUT_KEYS_COUNT] = {0};
 static bool new_keys[INPUT_KEYS_COUNT] = {0};
@@ -60,6 +61,7 @@ int step(void) {
                         int8_t move_res = KlondikeGame_move_tt(
                                 &game, cursor.from_pos, cursor.pos);
                         if (move_res == 1) {
+                                ++move_count;
                                 cursor.holding_cards = false;
                         } else if (move_res < 0) {
                                 return 5;
@@ -68,6 +70,7 @@ int step(void) {
                         int8_t move_res = KlondikeGame_move_wt(
                                 &game, cursor.pos);
                         if (move_res == 1) {
+                                ++move_count;
                                 cursor.holding_cards = false;
                         } else if (move_res < 0) {
                                 return 5;
@@ -82,6 +85,7 @@ int step(void) {
                 if (pos == TABLEAU_PILES) {
                         int8_t move_res = KlondikeGame_move_wf(&game);
                         if (move_res == 1) {
+                                ++move_count;
                                 cursor.holding_cards = false;
                         } else if (move_res < 0) {
                                 return 5;
@@ -96,7 +100,7 @@ int step(void) {
                 } else {
                         int8_t move_res = KlondikeGame_move_tf(&game, pos);
                         if (move_res == 1) {
-                                // just movement, for now
+                                ++move_count;
                         } else if (move_res < 0) {
                                 return 5;
                         } else if (!cursor.holding_cards) {
@@ -118,7 +122,7 @@ int step(void) {
         if (new_keys[IKIdx_Graph]) {
                 int8_t move_res = KlondikeGame_draw_stock(&game);
                 if (move_res == 1) {
-                        // just condition's side effect, for now
+                        ++move_count;
                 } else if (move_res < 0) {
                         return 5;
                 }
@@ -133,196 +137,8 @@ int step(void) {
         return 0;
 }
 
-int draw(void) {
-        gfx_FillScreen(GAMEPALETTE_GREEN);
-        gfx_SetColor(GAMEPALETTE_WHITE);
-        fontlib_SetColors(GAMEPALETTE_WHITE, GAMEPALETTE_BLACK);
-        fontlib_SetTransparency(true);
-
-        /* DEBUG */
-        fontlib_SetFont(font4x8, 0);
-        fontlib_SetCursorPosition(4, GFX_LCD_HEIGHT - 8 - 4);
-        fontlib_DrawString("[cursor] hold=");
-        fontlib_DrawUInt(cursor.holding_cards, 1);
-        fontlib_DrawString(" pos=");
-        fontlib_DrawUInt(cursor.pos, 1);
-        fontlib_DrawString(" from=");
-        fontlib_DrawUInt(cursor.from_pos, 1);
-        /* DRAW */
-        size_t tab_len = 0;
-        for (size_t c = 0; c < TABLEAU_PILES; ++c) {
-                if (game.tableau_piles[c].length > tab_len)
-                        tab_len = game.tableau_piles[c].length;
-        }
-
-        unsigned row_off = (GFX_LCD_HEIGHT - 24 - card_front_height) / (tab_len - 1);
-        if (row_off > 24) row_off = 24;
-
-        /* FOUNDATIONS */
-        fontlib_SetFont(font8x8, 0);
-        for (enum CardSuit suit = 0; suit < CARDSUIT_COUNT; ++suit) {
-                if (!game.foundations[suit].has_cards) {
-                        gfx_Rectangle(
-                                244 + 40 * (suit % 2) + 1,
-                                90 + 50 * (suit / 2) + 1,
-                                card_front_width - 2,
-                                card_front_height - 2);
-                        fontlib_SetForegroundColor(GAMEPALETTE_WHITE);
-                        fontlib_SetCursorPosition(
-                                244 + 40 * (suit % 2) + (card_front_width / 2) - 4,
-                                90 + 50 * (suit / 2) + (card_front_height / 2) - 4);
-                        fontlib_DrawGlyph(CARDSUIT_SYMBOLS[suit]);
-                } else {
-                        gfx_RLETSprite(card_front,
-                                244 + 40 * (suit % 2),
-                                90 + 50 * (suit / 2));
-                        fontlib_SetForegroundColor(GAMEPALETTE_SPADES + suit);
-                        fontlib_SetCursorPosition(
-                                244 + 40 * (suit % 2) + (card_front_width / 2) - 8,
-                                90 + 50 * (suit / 2) + 2);
-                        fontlib_DrawGlyph(CARDRANK_SYMBOLS[game.foundations[suit].top_rank]);
-                        fontlib_DrawGlyph(CARDSUIT_SYMBOLS[suit]);
-                }
-        }
-
-        /* WASTE */
-        struct Card const *waste_card = Vector_structCard_at_const(&
-                game.stock_waste, game.stock_remaining);
-        if (!waste_card) {
-                gfx_Rectangle( 240 + 1, 24 + 1,
-                        card_front_width - 2,
-                        card_front_height - 2);
-                /*fontlib_SetForegroundColor(GAMEPALETTE_WHITE);
-                fontlib_SetCursorPosition(
-                        240 + 40 * (suit % 2) + (card_front_width / 2) - 4,
-                        90 + 50 * (suit / 2) + (card_front_height / 2) - 4);
-                fontlib_DrawGlyph(CARDSUIT_SYMBOLS[suit]);*/
-        } else {
-                gfx_RLETSprite(card_front, 240, 24);
-                fontlib_SetForegroundColor(GAMEPALETTE_SPADES + waste_card->suit);
-                fontlib_SetCursorPosition(
-                        240 + (card_front_width / 2) - 8,
-                        24 + 2);
-                fontlib_SetFont(font8x8, 0);
-                fontlib_DrawGlyph(CARDRANK_SYMBOLS[waste_card->rank]);
-                fontlib_DrawGlyph(CARDSUIT_SYMBOLS[waste_card->suit]);
-        }
-        fontlib_SetCursorPosition(
-                240 + 3,
-                24 + card_back_height + 2);
-        fontlib_SetFont(font6x6, 0);
-        fontlib_SetForegroundColor(GAMEPALETTE_WHITE);
-        fontlib_DrawUInt(game.stock_waste.length - game.stock_remaining, 1);
-        fontlib_DrawGlyph('x');
-
-        /* STOCK */
-        fontlib_SetForegroundColor(GAMEPALETTE_WHITE);
-        if (!game.stock_remaining) {
-                gfx_Rectangle( 288 + 1, 24 + 1,
-                        card_front_width - 2,
-                        card_front_height - 2);
-                /*fontlib_SetForegroundColor(GAMEPALETTE_WHITE);
-                fontlib_SetCursorPosition(
-                        240 + 40 * (suit % 2) + (card_front_width / 2) - 4,
-                        90 + 50 * (suit / 2) + (card_front_height / 2) - 4);
-                fontlib_DrawGlyph(CARDSUIT_SYMBOLS[suit]);*/
-        } else {
-                gfx_RLETSprite(card_back, 288, 24);
-        }
-        fontlib_SetCursorPosition(
-                288 + 3,
-                24 + card_back_height + 2);
-        fontlib_SetFont(font6x6, 0);
-        fontlib_DrawUInt(game.stock_remaining, 1);
-        fontlib_DrawGlyph('x');
-
-        /* TABLEAU */
-        fontlib_SetFont(font8x8, 0);
-        for (size_t c = 0; c < TABLEAU_PILES; ++c) {
-                if (!game.tableau_piles[c].length) {
-                        gfx_Rectangle(c * 32 + 8 + 1, 16 + 1,
-                                card_front_width - 2,
-                                card_front_height - 2);
-                        continue;
-                }
-                for (size_t r = 0; r < game.tableau_down[c]; ++r) {
-                        gfx_RLETSprite(card_back, c * 32 + 8, r * row_off + 16);
-                }
-                for (size_t r = game.tableau_down[c]; r < game.tableau_piles[c].length; ++r) {
-                        struct Card const *card = Vector_structCard_at_const(
-                                &game.tableau_piles[c], r);
-                        if (!card) return __LINE__;
-                        gfx_RLETSprite(card_front, c * 32 + 8, r * row_off + 16);
-                        fontlib_SetForegroundColor(GAMEPALETTE_SPADES + card->suit);
-                        fontlib_SetCursorPosition(
-                                c * 32 + 8 + (card_front_width / 2) - 8,
-                                r * row_off + 16 + 2);
-                        fontlib_DrawGlyph(CARDRANK_SYMBOLS[card->rank]);
-                        fontlib_DrawGlyph(CARDSUIT_SYMBOLS[card->suit]);
-                }
-        }
-
-        /* CURSOR */
-
-        bool move_found = true;
-        if (cursor.holding_cards) {
-                if (cursor.pos == cursor.from_pos) {
-                        move_found = true;
-                } else if (cursor.pos == TABLEAU_PILES) {
-                        move_found = false;
-                } else if (cursor.from_pos == TABLEAU_PILES) {
-                        move_found = KlondikeGame_can_move_wt(&game, cursor.pos);
-                } else {
-                        move_found = KlondikeGame_can_move_tt(&game,
-                                cursor.from_pos, cursor.pos);
-                }
-        }
-#ifdef SHOW_MOVE_AVAILABLITY
-        else if (cursor.pos < TABLEAU_PILES) {
-                move_found = KlondikeGame_can_move_tf(&game, cursor.pos);
-                if (!move_found) for (size_t c = 0; c < TABLEAU_PILES; ++c) {
-                        if (KlondikeGame_can_move_tt(&game, cursor.pos, c)) {
-                                move_found = true;
-                                break;
-                        }
-                }
-        } else {
-                move_found = KlondikeGame_can_move_wf(&game);
-                if (!move_found) for (size_t c = 0; c < TABLEAU_PILES; ++c) {
-                        if (KlondikeGame_can_move_wt(&game, c)) {
-                                move_found = true;
-                                break;
-                        }
-                }
-        }
-#endif
-
-        if (cursor.pos != TABLEAU_PILES) {
-                gfx_RLETSprite(!move_found ? cursor_denied
-                        : cursor.holding_cards ? cursor_pointer_down : cursor_pointer_up,
-                        cursor.pos * 32 + 8 + card_back_width / 2 - cursor_pointer_down_width / 2,
-                        16 - cursor_pointer_down_height - 2);
-        } else {
-                gfx_RLETSprite(!move_found ? cursor_denied
-                        : cursor.holding_cards ? cursor_pointer_down : cursor_pointer_up,
-                        240 + card_back_width / 2 - cursor_pointer_down_width / 2,
-                        24 - cursor_pointer_down_height - 2);
-        }
-
-        fontlib_SetFont(font8x8, 0);
-        fontlib_SetTransparency(true);
-        fontlib_SetCursorPosition(GFX_LCD_WIDTH / 2, GFX_LCD_HEIGHT - 8 - 4);
-        fontlib_SetForegroundColor(GAMEPALETTE_WHITE);
-        /* WINNING/LOSS */
-        if (KlondikeGame_is_won(&game)) {
-                fontlib_DrawString("GAME WON!");
-        } else if (!KlondikeGame_can_make_move(&game)) {
-                fontlib_DrawString("GAME UNSOLVABLE");
-        }
-
-        gfx_SwapDraw();
-        return 0;
-}
+// Implemented in ./main_draw.c
+int draw(void);
 
 #ifdef CRASH_DUMP
 int dump_snprintf(char *__restrict__ buffer, size_t count, size_t *index, const char *__restrict__ format, ...) {
