@@ -262,7 +262,7 @@ int draw(void) {
         /* SHOW MESSAGE FOR WINNING OR LOSING */
         fontlib_SetFont(font8x8, 0);
         fontlib_SetTransparency(true);
-        fontlib_SetCursorPosition(GFX_LCD_WIDTH / 2, GFX_LCD_HEIGHT - 8 - 4);
+        fontlib_SetCursorPosition(GFX_LCD_WIDTH * 3 / 4, GFX_LCD_HEIGHT - 8 - 4);
         fontlib_SetForegroundColor(GAMEPALETTE_WHITE);
         if (KlondikeGame_is_won(&game)) {
                 fontlib_DrawString("GAME WON!");
