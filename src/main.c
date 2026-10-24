@@ -25,15 +25,17 @@
 
 struct KlondikeGame game;
 struct {
-        size_t pos; // pos == TABLEAU_PILES: Waste
+        size_t pos; // pos == CURSOR_WASTE_POS: Waste
         bool holding_cards;
-        size_t from_pos; // from_pos == TABLEAU_PILES: Waste
+        size_t from_pos; // from_pos == CURSOR_WASTE_POS: Waste
 } cursor = {0};
 enum {
         GAME_ONGOING,
         GAME_WON,
         GAME_LOST
 } game_status = GAME_ONGOING;
+
+#define CURSOR_WASTE_POS (TABLEAU_PILES)
 
 unsigned move_count;
 uintmax_t game_secs;

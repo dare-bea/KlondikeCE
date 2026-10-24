@@ -10,7 +10,10 @@
 #include <sys/timers.h>
 
 #ifdef CRASH_DUMP
+#include "klondike.h"
 #include <stdio.h>
+
+extern struct KlondikeGame game;
 
 static int dump_snprintf(char *__restrict__ buffer, size_t count, size_t *index, const char *__restrict__ format, ...) {
         va_list va;
@@ -22,7 +25,7 @@ static int dump_snprintf(char *__restrict__ buffer, size_t count, size_t *index,
 }
 #endif
 
-void error_screen(int errno, int errline) {
+void error(int errno, int errline) {
         gfx_FillScreen(GAMEPALETTE_HEARTS);
         fontlib_SetFont(font8x8, 0);
         fontlib_SetTransparency(true);

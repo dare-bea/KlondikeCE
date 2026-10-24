@@ -6,15 +6,17 @@
 
 extern struct KlondikeGame game;
 extern struct {
-        size_t pos; // pos == TABLEAU_PILES: Waste
+        size_t pos; // pos == CURSOR_WASTE_POS: Waste
         bool holding_cards;
-        size_t from_pos; // from_pos == TABLEAU_PILES: Waste
+        size_t from_pos; // from_pos == CURSOR_WASTE_POS: Waste
 } cursor;
 extern enum {
         GAME_ONGOING,
         GAME_WON,
         GAME_LOST
 } game_status;
+
+#define CURSOR_WASTE_POS (TABLEAU_PILES)
 
 extern unsigned move_count;
 extern uintmax_t game_secs;
@@ -64,7 +66,7 @@ int step(void) {
         }
         if (new_keys[IKIdx_Enter]) {
                 if (!cursor.holding_cards) {
-                        if (cursor.pos == TABLEAU_PILES
+                        if (cursor.pos == CURSOR_WASTE_POS
                             ? game.stock_waste.length != game.stock_remaining
                             : game.tableau_piles[cursor.pos].length) {
                                 cursor.holding_cards = true;
@@ -72,7 +74,7 @@ int step(void) {
                         }
                 } else if (cursor.from_pos == cursor.pos) {
                         cursor.holding_cards = false;
-                } else if (cursor.from_pos != TABLEAU_PILES && cursor.pos != TABLEAU_PILES) {
+                } else if (cursor.from_pos != CURSOR_WASTE_POS && cursor.pos != CURSOR_WASTE_POS) {
                         int8_t move_res = KlondikeGame_move_tt(
                                 &game, cursor.from_pos, cursor.pos);
                         if (move_res == 1) {
@@ -81,7 +83,7 @@ int step(void) {
                         } else if (move_res < 0) {
                                 return 5;
                         }
-                } else if (cursor.from_pos == TABLEAU_PILES && cursor.pos != TABLEAU_PILES) {
+                } else if (cursor.from_pos == CURSOR_WASTE_POS && cursor.pos != CURSOR_WASTE_POS) {
                         int8_t move_res = KlondikeGame_move_wt(
                                 &game, cursor.pos);
                         if (move_res == 1) {
@@ -97,7 +99,7 @@ int step(void) {
         }
         if (new_keys[IKIdx_Trace]) {
                 size_t pos = cursor.holding_cards ? cursor.from_pos : cursor.pos;
-                if (pos == TABLEAU_PILES) {
+                if (pos == CURSOR_WASTE_POS) {
                         int8_t move_res = KlondikeGame_move_wf(&game);
                         if (move_res == 1) {
                                 ++move_count;
@@ -129,7 +131,7 @@ int step(void) {
                                 }
                                 if (!found_foundation_movable && KlondikeGame_can_move_wf(&game)) {
                                         found_foundation_movable = true;
-                                        cursor.pos = TABLEAU_PILES;
+                                        cursor.pos = CURSOR_WASTE_POS;
                                 }
                         }
                 }
@@ -146,7 +148,7 @@ int step(void) {
                 if (0 < cursor.pos)
                         --cursor.pos;
         } else if (!new_keys[IKIdx_Left] && new_keys[IKIdx_Right]) {
-                if (cursor.pos < TABLEAU_PILES)
+                if (cursor.pos < CURSOR_WASTE_POS)
                         ++cursor.pos;
         }
         return 0;

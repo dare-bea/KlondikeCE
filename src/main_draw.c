@@ -9,15 +9,17 @@
 
 extern struct KlondikeGame game;
 extern struct {
-        size_t pos; // pos == TABLEAU_PILES: Waste
+        size_t pos; // pos == CURSOR_WASTE_POS: Waste
         bool holding_cards;
-        size_t from_pos; // from_pos == TABLEAU_PILES: Waste
+        size_t from_pos; // from_pos == CURSOR_WASTE_POS: Waste
 } cursor;
 extern enum {
         GAME_ONGOING,
         GAME_WON,
         GAME_LOST
 } game_status;
+
+#define CURSOR_WASTE_POS (TABLEAU_PILES)
 
 extern unsigned move_count;
 extern uintmax_t game_secs;
@@ -64,7 +66,7 @@ int draw(void) {
         for (size_t c = 0; c < TABLEAU_PILES; ++c) {
                 size_t len = game.tableau_piles[c].length;
                 if (cursor.holding_cards && cursor.pos != cursor.from_pos && cursor.pos == c) {
-                        if (cursor.from_pos == TABLEAU_PILES) {
+                        if (cursor.from_pos == CURSOR_WASTE_POS) {
                                 ++len;
                         } else {
                                 len += game.tableau_piles[cursor.from_pos].length - game.tableau_down[cursor.from_pos];
@@ -150,17 +152,17 @@ int draw(void) {
         }
 
         // Waste
-        if (cursor.holding_cards && cursor.from_pos == TABLEAU_PILES) {
+        if (cursor.holding_cards && cursor.from_pos == CURSOR_WASTE_POS) {
                 struct Card const *waste_card = Vector_structCard_at_const(
                         &game.stock_waste,
-                        game.stock_remaining + (cursor.pos == TABLEAU_PILES ? 0 : 1));
+                        game.stock_remaining + (cursor.pos == CURSOR_WASTE_POS ? 0 : 1));
                 if (waste_card) {
                         if (game.stock_waste.length - game.stock_remaining > 1) {
                                 gfx_RLETSprite(card_front, DIM_WASTE_X, DIM_WASTE_Y);
                         }
                         render_card(waste_card,
                                 DIM_WASTE_X,
-                                DIM_WASTE_Y - (cursor.pos == TABLEAU_PILES ? DIM_HOLDCARD_YOFF : 0));
+                                DIM_WASTE_Y - (cursor.pos == CURSOR_WASTE_POS ? DIM_HOLDCARD_YOFF : 0));
                 }
         } else {
                 struct Card const *waste_card = Vector_structCard_at_const(
@@ -182,7 +184,7 @@ int draw(void) {
                                 DIM_TABLE_X + DIM_TABLE_DX * c,
                                 DIM_TABLE_Y + row_off * r);
                 }
-                if (!cursor.holding_cards || c != cursor.from_pos || cursor.pos == TABLEAU_PILES) {
+                if (!cursor.holding_cards || c != cursor.from_pos || cursor.pos == CURSOR_WASTE_POS) {
                         for (size_t r = game.tableau_down[c]; r < game.tableau_piles[c].length; ++r) {
                                 struct Card const *card = Vector_structCard_at_const(
                                         &game.tableau_piles[c], r);
@@ -195,8 +197,8 @@ int draw(void) {
         }
 
         // Held cards in tableau
-        if (cursor.holding_cards && cursor.pos != TABLEAU_PILES) {
-                if (cursor.from_pos == TABLEAU_PILES) {
+        if (cursor.holding_cards && cursor.pos != CURSOR_WASTE_POS) {
+                if (cursor.from_pos == CURSOR_WASTE_POS) {
                         size_t r = game.tableau_piles[cursor.pos].length;
                         struct Card const *card = Vector_structCard_at_const(&game.stock_waste,
                                 game.stock_remaining);
@@ -223,9 +225,9 @@ int draw(void) {
         if (cursor.holding_cards) {
                 if (cursor.pos == cursor.from_pos) {
                         move_found = true;
-                } else if (cursor.pos == TABLEAU_PILES) {
+                } else if (cursor.pos == CURSOR_WASTE_POS) {
                         move_found = false;
-                } else if (cursor.from_pos == TABLEAU_PILES) {
+                } else if (cursor.from_pos == CURSOR_WASTE_POS) {
                         move_found = KlondikeGame_can_move_wt(&game, cursor.pos);
                 } else {
                         move_found = KlondikeGame_can_move_tt(&game,
@@ -253,7 +255,7 @@ int draw(void) {
 #endif
 
         /* RENDER CURSOR */
-        if (cursor.pos != TABLEAU_PILES) {
+        if (cursor.pos != CURSOR_WASTE_POS) {
                 unsigned cursor_y = DIM_TABLE_Y - 2
                         - (!move_found ? cursor_denied_height
                         : cursor.holding_cards ? cursor_pointer_down_height : cursor_pointer_up_height);
