@@ -14,6 +14,7 @@ extern struct {
         size_t from_pos; // from_pos == CURSOR_WASTE_POS: Waste
 } cursor;
 extern enum {
+        GAME_WAITING,
         GAME_ONGOING,
         GAME_WON,
         GAME_LOST
@@ -91,7 +92,7 @@ int draw(void) {
         fontlib_SetLineSpacing(0, 1);
         fontlib_SetWindow(DIM_CONTROLINFO_X, DIM_CONTROLINFO_Y, GFX_LCD_WIDTH - DIM_CONTROLINFO_X, GFX_LCD_HEIGHT - DIM_CONTROLINFO_Y);
         fontlib_SetCursorPosition(DIM_CONTROLINFO_X, DIM_CONTROLINFO_Y);
-        fontlib_DrawString("ENTER: Select/Move\nCLEAR: Deselect\nF4: Play to foundation\nF5: Draw from stock\nON/MODE: Quit");
+        fontlib_DrawString("ARROW: Cursor\nENTER: Select/Move\nCLEAR: Deselect\nF1: Play to foundation\nF2: Draw from stock\nON: Quit");
         fontlib_SetWindowFullScreen();
 
         /* DRAW BLANK LOCATIONS */

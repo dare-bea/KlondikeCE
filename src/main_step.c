@@ -11,6 +11,7 @@ extern struct {
         size_t from_pos; // from_pos == CURSOR_WASTE_POS: Waste
 } cursor;
 extern enum {
+        GAME_WAITING,
         GAME_ONGOING,
         GAME_WON,
         GAME_LOST
@@ -25,17 +26,17 @@ extern clock_t game_start;
 
 #define INPUT_KEYS_COUNT 6
 enum InputKeyIndex {
-        IKIdx_Left, IKIdx_Right, IKIdx_Enter, IKIdx_Trace, IKIdx_Graph, IKIdx_Clear
+        IKIdx_Left, IKIdx_Right, IKIdx_Yequ, IKIdx_Window, IKIdx_Clear, IKIdx_Enter, IKIdx_Graph
 };
 static const kb_lkey_t INPUT_KEYS[INPUT_KEYS_COUNT] = {
-        kb_KeyLeft, kb_KeyRight, kb_KeyEnter, kb_KeyTrace, kb_KeyGraph, kb_KeyClear
+        kb_KeyLeft, kb_KeyRight, kb_KeyYequ, kb_KeyWindow, kb_KeyClear, kb_KeyEnter, kb_KeyGraph
 };
 
 static clock_t auto_repeat[INPUT_KEYS_COUNT] = {0};
 static bool new_keys[INPUT_KEYS_COUNT] = {0};
 
 #define CURSOR_AUTOREPEAT_RATE 0.125
-#define CURSOR_AUTOREPEAT_DELAY 0.500
+#define CURSOR_AUTOREPEAT_DELAY 0.333
 
 int step(void) {
         clock_t const now = clock();
@@ -47,14 +48,16 @@ int step(void) {
                         game_status = GAME_LOST;
                 }
         }
-        for (enum InputKeyIndex i = IKIdx_Left; i < INPUT_KEYS_COUNT; ++i) {
+        for (enum InputKeyIndex i = 0; i < INPUT_KEYS_COUNT; ++i) {
                 bool pressed = kb_IsDown(INPUT_KEYS[i]);
+                if (GAME_WAITING && pressed)
+                        game_status = GAME_ONGOING;
                 if (auto_repeat[i]) {
                         if (!pressed) {
                                 auto_repeat[i] = 0;
                                 new_keys[i] = false;
                         } else if (auto_repeat[i] < now
-                                   && (i == IKIdx_Left || i == IKIdx_Right)) {
+                                   && (i == IKIdx_Left || i == IKIdx_Right || i == IKIdx_Yequ)) {
                                 auto_repeat[i] = now + (clock_t)(CLOCKS_PER_SEC * (CURSOR_AUTOREPEAT_RATE));
                                 new_keys[i] = true;
                         } else {
@@ -65,7 +68,7 @@ int step(void) {
                         new_keys[i] = pressed;
                 }
         }
-        if (new_keys[IKIdx_Enter]) {
+        if (new_keys[IKIdx_Enter] || new_keys[IKIdx_Graph]) {
                 if (!cursor.holding_cards) {
                         if (cursor.pos == CURSOR_STOCK_POS) {
                                 int8_t move_res = KlondikeGame_draw_stock(&game);
@@ -105,7 +108,7 @@ int step(void) {
         if (new_keys[IKIdx_Clear]) {
                 cursor.holding_cards = false;
         }
-        if (new_keys[IKIdx_Trace]) {
+        if (new_keys[IKIdx_Yequ]) {
                 size_t pos = cursor.holding_cards ? cursor.from_pos : cursor.pos;
                 if (pos == CURSOR_WASTE_POS) {
                         int8_t move_res = KlondikeGame_move_wf(&game);
@@ -144,20 +147,18 @@ int step(void) {
                         }
                 }
         }
-        if (new_keys[IKIdx_Graph]) {
+        if (new_keys[IKIdx_Window]) {
                 int8_t move_res = KlondikeGame_draw_stock(&game);
                 if (move_res == 1) {
-                        ++move_count;
+                        // ++move_count;
                 } else if (move_res < 0) {
                         return __LINE__;
                 }
         }
         if (new_keys[IKIdx_Left] && !new_keys[IKIdx_Right]) {
-                if (0 < cursor.pos)
-                        --cursor.pos;
+                cursor.pos = (cursor.pos - 1) % (CURSOR_STOCK_POS + 1);
         } else if (!new_keys[IKIdx_Left] && new_keys[IKIdx_Right]) {
-                if (cursor.pos < CURSOR_STOCK_POS)
-                        ++cursor.pos;
+                cursor.pos = (cursor.pos + 1) % (CURSOR_STOCK_POS + 1);
         }
         return 0;
 }

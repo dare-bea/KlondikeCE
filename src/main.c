@@ -30,10 +30,11 @@ struct {
         size_t from_pos; // from_pos == CURSOR_WASTE_POS: Waste
 } cursor = {0};
 enum {
+        GAME_WAITING,
         GAME_ONGOING,
         GAME_WON,
         GAME_LOST
-} game_status = GAME_ONGOING;
+} game_status = GAME_WAITING;
 
 #define CURSOR_WASTE_POS (TABLEAU_PILES)
 #define CURSOR_STOCK_POS (TABLEAU_PILES + 1)
@@ -72,7 +73,7 @@ int main(void)
         }
 
         game_start = clock();
-        while (!errno && !kb_On && !kb_IsDown(kb_KeyMode)) {
+        while (!errno && !kb_On/* && !kb_IsDown(kb_KeyMode)*/) {
                 errline = step();
                 if (errline) {
                         errno = errno ? errno : 2;
@@ -98,5 +99,8 @@ int main(void)
         }
 
         gfx_End();
+        while (kb_AnyKey()) {
+                // Wait for key to be released
+        }
         return errno ? 1 : 0;
 }
