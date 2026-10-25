@@ -93,7 +93,7 @@ int draw(void) {
         fontlib_SetCursorPosition(DIM_CONTROLINFO_X, DIM_CONTROLINFO_Y);
         fontlib_DrawString(
                 "LEFT/RIGHT: Cursor\n"
-                "ENTER: Select/move\n"
+                "F5: Select/move pile\n"
                 "CLEAR: Deselect pile\n"
                 "F1: Play to foundation\n"
                 "F2: Draw 3 from stock\n"
