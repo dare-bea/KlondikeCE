@@ -68,16 +68,11 @@ int step(void) {
         if (new_keys[IKIdx_Enter] || new_keys[IKIdx_Graph]) {
                 if (!cursor.holding_cards) {
                         if (cursor.pos == CURSOR_STOCK_POS) {
-                                #ifndef ONE_CARD_PER_STOCK_DRAW
-                                for (size_t i = 0; i < 3; ++i)
-                                #endif
-                                {
-                                        int8_t move_res = KlondikeGame_draw_stock(&game);
-                                        if (move_res == 1) {
-                                                // ++move_count;
-                                        } else if (move_res < 0) {
-                                                return __LINE__;
-                                        }
+                                int8_t move_res = KlondikeGame_draw_stock(&game);
+                                if (move_res == 1) {
+                                        // ++move_count;
+                                } else if (move_res < 0) {
+                                        return __LINE__;
                                 }
                         } else if (cursor.pos == CURSOR_WASTE_POS
                                    ? game.stock_waste.length != game.stock_remaining
@@ -150,16 +145,11 @@ int step(void) {
                 }
         }
         if (new_keys[IKIdx_Window]) {
-                #ifndef ONE_CARD_PER_STOCK_DRAW
-                for (size_t i = 0; i < 3; ++i)
-                #endif
-                {
-                        int8_t move_res = KlondikeGame_draw_stock(&game);
-                        if (move_res == 1) {
-                                // ++move_count;
-                        } else if (move_res < 0) {
-                                return __LINE__;
-                        }
+                int8_t move_res = KlondikeGame_draw_stock(&game);
+                if (move_res == 1) {
+                        // ++move_count;
+                } else if (move_res < 0) {
+                        return __LINE__;
                 }
         }
         if (new_keys[IKIdx_Left] && !new_keys[IKIdx_Right]) {

@@ -55,7 +55,7 @@ bool _KlondikeGame_attempt_init(struct KlondikeGame *game) {
                     }))
                         return false;
         }
-        for (size_t i = 1; i < game->stock_waste.length; ++i) {
+        for (size_t i = game->stock_remaining;;) {
                 size_t j = i == SIZE_MAX ? rand() : rand() % (i + 1);
                 struct Card *ip = Vector_structCard_at(&game->stock_waste, i);
                 struct Card *jp = Vector_structCard_at(&game->stock_waste, j);
@@ -64,6 +64,9 @@ bool _KlondikeGame_attempt_init(struct KlondikeGame *game) {
                 struct Card tmp = *ip;
                 *ip = *jp;
                 *jp = tmp;
+                i = (i + 3) % game->stock_waste.length;
+                if (i == game->stock_remaining)
+                        break;
         }
         for (size_t i = 0; i < TABLEAU_PILES; ++i) {
                 if (!Vector_structCard_reserve_exact(&game->tableau_piles[i], 8))
@@ -218,9 +221,10 @@ __attribute__((nonnull(1)))
 int8_t KlondikeGame_draw_stock(struct KlondikeGame *game) {
         if (!KlondikeGame_can_draw_stock(game))
                 return 0;
-        game->stock_remaining = game->stock_remaining
-                ? game->stock_remaining - 1
-                : game->stock_waste.length - 1;
+        for (size_t i = 0; i < STOCK_DRAWN_CARDS; ++i)
+                game->stock_remaining = game->stock_remaining
+                        ? game->stock_remaining - 1
+                        : game->stock_waste.length - 1;
         return 1;
 }
 

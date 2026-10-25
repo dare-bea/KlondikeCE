@@ -37,6 +37,13 @@ struct KlondikeGame {
         size_t stock_remaining;
 };
 
+#ifndef ONE_CARD_PER_STOCK_DRAW
+#define STOCK_DRAWN_CARDS 3
+#else
+#define STOCK_DRAWN_CARDS 1
+#endif
+
+
 void KlondikeGame_free(struct KlondikeGame *game);
 bool KlondikeGame_init(struct KlondikeGame *game);
 bool KlondikeGame_invariants_hold(struct KlondikeGame *game);
