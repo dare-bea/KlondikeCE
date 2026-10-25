@@ -24,7 +24,7 @@ extern unsigned move_count;
 extern uintmax_t game_secs;
 extern clock_t game_start;
 
-#define INPUT_KEYS_COUNT 6
+#define INPUT_KEYS_COUNT 7
 enum InputKeyIndex {
         IKIdx_Left, IKIdx_Right, IKIdx_Yequ, IKIdx_Window, IKIdx_Clear, IKIdx_Enter, IKIdx_Graph
 };
