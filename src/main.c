@@ -31,18 +31,17 @@ struct {
         size_t from_pos; // from_pos == CURSOR_WASTE_POS: Waste
 } cursor = {0};
 enum {
-        GAME_WAITING,
         GAME_ONGOING,
         GAME_WON,
         GAME_LOST
-} game_status = GAME_WAITING;
+} game_status = GAME_ONGOING;
 
 #define CURSOR_WASTE_POS (TABLEAU_PILES)
 #define CURSOR_STOCK_POS (TABLEAU_PILES + 1)
 
-unsigned move_count;
-uintmax_t game_secs;
-clock_t game_start;
+unsigned move_count = 0;
+uintmax_t game_secs = 0;
+clock_t game_start = 0;
 
 static int errno = 0;
 static int errline = 0;
@@ -73,6 +72,13 @@ int main(void)
                 errno = 1, errline = __LINE__;
         }
 
+        errline = draw();
+        if (errline) {
+                errno = errno ? errno : 5;
+        } else while (!kb_AnyKey()) {
+                // Wait for key to be pressed
+        }
+        kb_SetMode(MODE_3_CONTINUOUS); // kb_AnyKey() resets mode for some reason?
         game_start = clock();
         while (!errno && !kb_On/* && !kb_IsDown(kb_KeyMode)*/) {
                 errline = step();

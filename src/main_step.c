@@ -11,7 +11,6 @@ extern struct {
         size_t from_pos; // from_pos == CURSOR_WASTE_POS: Waste
 } cursor;
 extern enum {
-        GAME_WAITING,
         GAME_ONGOING,
         GAME_WON,
         GAME_LOST
@@ -40,7 +39,7 @@ static bool new_keys[INPUT_KEYS_COUNT] = {0};
 
 int step(void) {
         clock_t const now = clock();
-        if (game_status <= GAME_ONGOING) {
+        if (game_status == GAME_ONGOING) {
                 game_secs = (uintmax_t)((now - game_start) / CLOCKS_PER_SEC);
                 if (KlondikeGame_is_won(&game)) {
                         game_status = GAME_WON;
@@ -50,8 +49,6 @@ int step(void) {
         }
         for (enum InputKeyIndex i = 0; i < INPUT_KEYS_COUNT; ++i) {
                 bool pressed = kb_IsDown(INPUT_KEYS[i]);
-                if (game_status == GAME_WAITING && pressed)
-                        game_status = GAME_ONGOING;
                 if (auto_repeat[i]) {
                         if (!pressed) {
                                 auto_repeat[i] = 0;

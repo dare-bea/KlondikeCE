@@ -14,7 +14,6 @@ extern struct {
         size_t from_pos; // from_pos == CURSOR_WASTE_POS: Waste
 } cursor;
 extern enum {
-        GAME_WAITING,
         GAME_ONGOING,
         GAME_WON,
         GAME_LOST
