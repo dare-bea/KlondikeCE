@@ -68,7 +68,7 @@ int step(void) {
         if (new_keys[IKIdx_Enter] || new_keys[IKIdx_Graph]) {
                 if (!cursor.holding_cards) {
                         if (cursor.pos == CURSOR_STOCK_POS) {
-                                int8_t move_res = KlondikeGame_draw_stock(&game);
+                                int8_t move_res = KlondikeGame_draw_stock(&game, game_status == GAME_ONGOING ? STOCK_DRAWN_CARDS : 1);
                                 if (move_res == 1) {
                                         // ++move_count;
                                 } else if (move_res < 0) {
@@ -145,7 +145,7 @@ int step(void) {
                 }
         }
         if (new_keys[IKIdx_Window]) {
-                int8_t move_res = KlondikeGame_draw_stock(&game);
+                int8_t move_res = KlondikeGame_draw_stock(&game, game_status == GAME_ONGOING ? STOCK_DRAWN_CARDS : 1);
                 if (move_res == 1) {
                         // ++move_count;
                 } else if (move_res < 0) {

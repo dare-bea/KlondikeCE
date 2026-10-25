@@ -149,30 +149,42 @@ bool KlondikeGame_is_won(struct KlondikeGame *game) {
 
 __attribute__((nonnull(1)))
 bool KlondikeGame_can_make_move(struct KlondikeGame *game) {
+        size_t const waste_start = game->stock_waste.length ? 0 : game->stock_remaining;
         for (size_t ta = 0; ta < TABLEAU_PILES; ++ta) {
                 if (KlondikeGame_can_move_tf(game, ta))
                         return true;
-                for (size_t w = game->stock_remaining % STOCK_DRAWN_CARDS; w < game->stock_waste.length; w += STOCK_DRAWN_CARDS) {
-                        if (_KlondikeGame_can_move_xt(game,
-                            Vector_structCard_at(&game->stock_waste, w),
-                            ta, false))
-                                return true;
+                if (game->stock_waste.length) { // prevent divide by zero
+                        for (size_t w = waste_start;;) {
+                                if (_KlondikeGame_can_move_xt(game,
+                                Vector_structCard_at(&game->stock_waste, w),
+                                ta, false))
+                                        return true;
+                                w = (w + STOCK_DRAWN_CARDS) % game->stock_waste.length;
+                                if (w == waste_start)
+                                        break;
+                        }
                 }
                 for (size_t tb = 0; tb < TABLEAU_PILES; ++tb) {
                         if (KlondikeGame_can_move_tt(game, ta, tb))
                                 return true;
                 }
         }
-        for (size_t w = game->stock_remaining % STOCK_DRAWN_CARDS; w < game->stock_waste.length; w += STOCK_DRAWN_CARDS) {
-                if (_KlondikeGame_can_move_xf(game,
-                    Vector_structCard_at(&game->stock_waste, w)))
-                        return true;
+        if (game->stock_waste.length) {
+                for (size_t w = waste_start;;) {
+                        if (_KlondikeGame_can_move_xf(game,
+                        Vector_structCard_at(&game->stock_waste, w)))
+                                return true;
+                        w = (w + STOCK_DRAWN_CARDS) % game->stock_waste.length;
+                        if (w == waste_start)
+                                break;
+                }
         }
         return false;
 }
 
 __attribute__((nonnull(1)))
-bool KlondikeGame_can_draw_stock(struct KlondikeGame *game) {
+bool KlondikeGame_can_draw_stock(struct KlondikeGame *game, size_t count) {
+        (void)count;
         assert(KlondikeGame_invariants_hold(game));
         return game->stock_waste.length;
 }
@@ -215,10 +227,10 @@ bool KlondikeGame_can_move_wf(struct KlondikeGame *game) {
 }
 
 __attribute__((nonnull(1)))
-int8_t KlondikeGame_draw_stock(struct KlondikeGame *game) {
-        if (!KlondikeGame_can_draw_stock(game))
+int8_t KlondikeGame_draw_stock(struct KlondikeGame *game, size_t count) {
+        if (!KlondikeGame_can_draw_stock(game, count))
                 return 0;
-        for (size_t i = 0; i < STOCK_DRAWN_CARDS; ++i)
+        for (size_t i = 0; i < count; ++i)
                 game->stock_remaining = game->stock_remaining
                         ? game->stock_remaining - 1
                         : game->stock_waste.length - 1;
