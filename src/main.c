@@ -21,6 +21,7 @@
  * `SHOW_MOVE_AVAILABLITY` - Calculate and show if a move is available from the
  *      hovered tableau/waste pile when you are not holding it.
  * `DEBUG_CURSOR_INFO` - Show cursor debug information
+ * `ONE_CARD_PER_STOCK_DRAW` - When drawing from the stock, move one card to the waste instead of three.
  */
 
 struct KlondikeGame game;
