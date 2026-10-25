@@ -152,11 +152,14 @@ bool KlondikeGame_can_make_move(struct KlondikeGame *game) {
         for (size_t ta = 0; ta < TABLEAU_PILES; ++ta) {
                 if (KlondikeGame_can_move_tf(game, ta))
                         return true;
-                for (size_t w = 0; w < game->stock_waste.length; ++w) {
+                for (size_t w = game->stock_remaining;;) {
                         if (_KlondikeGame_can_move_xt(game,
                             Vector_structCard_at(&game->stock_waste, w),
                             ta, false))
                                 return true;
+                        w = (w + 3) % game->stock_waste.length;
+                        if (w == game->stock_remaining)
+                                break;
                 }
                 for (size_t tb = 0; tb < TABLEAU_PILES; ++tb) {
                         if (KlondikeGame_can_move_tt(game, ta, tb))
