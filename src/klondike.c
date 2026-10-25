@@ -149,7 +149,8 @@ bool KlondikeGame_is_won(struct KlondikeGame *game) {
 
 __attribute__((nonnull(1)))
 bool KlondikeGame_can_make_move(struct KlondikeGame *game) {
-        size_t const waste_start = game->stock_waste.length ? 0 : game->stock_remaining;
+        size_t const waste_start = game->stock_remaining == game->stock_waste.length
+                ? 0 : game->stock_remaining;
         for (size_t ta = 0; ta < TABLEAU_PILES; ++ta) {
                 if (KlondikeGame_can_move_tf(game, ta))
                         return true;
