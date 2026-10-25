@@ -92,7 +92,13 @@ int draw(void) {
         fontlib_SetLineSpacing(0, 1);
         fontlib_SetWindow(DIM_CONTROLINFO_X, DIM_CONTROLINFO_Y, GFX_LCD_WIDTH - DIM_CONTROLINFO_X, GFX_LCD_HEIGHT - DIM_CONTROLINFO_Y);
         fontlib_SetCursorPosition(DIM_CONTROLINFO_X, DIM_CONTROLINFO_Y);
-        fontlib_DrawString("ARROW: Cursor\nENTER: Select/Move\nCLEAR: Deselect\nF1: Play to foundation\nF2: Draw from stock\nON: Quit");
+        fontlib_DrawString(
+                "LEFT/RIGHT: Cursor\n"
+                "ENTER: Select/move\n"
+                "CLEAR: Deselect pile\n"
+                "F1: Play to foundation\n"
+                "F2: Draw 3 from stock\n"
+                "ON: Quit");
         fontlib_SetWindowFullScreen();
 
         /* DRAW BLANK LOCATIONS */
