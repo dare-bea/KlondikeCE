@@ -27,7 +27,7 @@ static int dump_snprintf(char *__restrict__ buffer, size_t count, size_t *index,
 #endif
 
 void error_screen(int errno, int errline) {
-        gfx_FillScreen(GAMEPALETTE_HEARTS);
+        gfx_FillScreen(GAMEPALETTE_HEART);
         fontlib_SetFont(font8x8, 0);
         fontlib_SetTransparency(true);
         fontlib_SetForegroundColor(GAMEPALETTE_WHITE);

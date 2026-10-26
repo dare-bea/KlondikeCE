@@ -66,7 +66,7 @@ $(FONTDIR)/font4x6.inc: $(SRCDIR)/imgtoconvfont.py $(SRCDIR)/fonts.png
 
 $(FONTDIR)/font12x16.inc: $(SRCDIR)/imgtoconvfont.py $(SRCDIR)/fonts.png
 	$(Q)$(call MKDIR,$(@D))
-	$(Q)python3 $(SRCDIR)/imgtoconvfont.py $(SRCDIR)/fonts.png 12 16 16 --x 1 --y 136 --xheight 9 --bgcolor \#FFFFFF \#c0c0c0 > $(FONTDIR)/font12x16.convfont --glyph 0x80:194,136 --glyph 0x81:206,136 --glyph 0x82:194,152 --glyph 0x83:206,152
+	$(Q)python3 $(SRCDIR)/imgtoconvfont.py $(SRCDIR)/fonts.png 12 16 16 --x 1 --y 136 --xheight 9 --bgcolor \#FFFFFF \#c0c0c0 > $(FONTDIR)/font12x16.convfont --glyph 0x80:194,168 --glyph 0x81:194,184 --glyph 0x82:206,168 --glyph 0x83:206,184
 	$(Q)convfont -o carray -t $(FONTDIR)/font12x16.convfont $(FONTDIR)/font12x16.inc
 
 $(PYTMPFILES) &: $(SRCDIR)/build.py $(PYSRCFILES)

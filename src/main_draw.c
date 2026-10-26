@@ -51,10 +51,14 @@ static const char CARDSUIT_SYMBOLS[CARDSUIT_COUNT + 1] = "\x80\x81\x82\x83";
 #define DIM_CONTROLINFO_X (DIM_TABLE_X + DIM_TABLE_DX * TABLEAU_PILES - 3)
 #define DIM_CONTROLINFO_Y (DIM_FOUND_Y + DIM_FOUND_DY * 2 - 10)
 
+#define DIM_GAMEINFO_X 4
+#define DIM_GAMEINFO_Y (GFX_LCD_HEIGHT - 8 - 4)
+
+
 __attribute__((nonnull(1)))
 static inline void render_card(struct Card const *card, unsigned x, uint8_t y) {
         fontlib_SetFont(font8x8, 0);
-        fontlib_SetForegroundColor(GAMEPALETTE_SPADES + card->suit);
+        fontlib_SetForegroundColor(GAMEPALETTE_SPADE + card->suit);
         fontlib_SetCursorPosition(x + (card_front_width / 2) - 8, y + DIM_CARDINFO_YOFF);
         gfx_RLETSprite(card_front, x, y);
         fontlib_DrawGlyph(CARDRANK_SYMBOLS[card->rank]);
@@ -314,7 +318,7 @@ int draw(void) {
         fontlib_SetForegroundColor(GAMEPALETTE_WHITE);
 
         /* MOVE COUNTER */
-        fontlib_SetCursorPosition(4, GFX_LCD_HEIGHT - 8 - 4);
+        fontlib_SetCursorPosition(DIM_GAMEINFO_X, DIM_GAMEINFO_Y);
         fontlib_SetFont(font6x8, 0);
         fontlib_DrawUInt(move_count, 1);
         fontlib_DrawString(" Moves  ");
