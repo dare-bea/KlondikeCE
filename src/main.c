@@ -72,13 +72,6 @@ int main(void)
                 errno = 1, errline = __LINE__;
         }
 
-        errline = draw();
-        if (errline) {
-                errno = errno ? errno : 5;
-        } else while (!kb_On && !kb_AnyKey()) {
-                // Wait for key to be pressed
-        }
-        kb_SetMode(MODE_3_CONTINUOUS); // kb_AnyKey() resets mode for some reason?
         game_start = clock();
         while (!errno && !kb_On/* && !kb_IsDown(kb_KeyMode)*/) {
                 errline = step();
