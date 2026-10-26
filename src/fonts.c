@@ -28,3 +28,8 @@ static const uint8_t font4x6_data[] = {
     #include "fonts/font4x6.inc"
 };
 const fontlib_font_t *font4x6 = (fontlib_font_t *)font4x6_data;
+
+static const uint8_t font12x16_data[] = {
+    #include "fonts/font12x16.inc"
+};
+const fontlib_font_t *font12x16 = (fontlib_font_t *)font12x16_data;
