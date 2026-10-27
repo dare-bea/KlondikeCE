@@ -1,6 +1,6 @@
 NAME = KLONDIKE
 ICON = icon.png
-DESCRIPTION = "Basic Solitare Implementation on CE"
+DESCRIPTION = "Basic Solitare Implementation on the CE"
 COMPRESSED = YES
 ARCHIVED = NO
 
