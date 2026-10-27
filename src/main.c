@@ -33,7 +33,8 @@ struct {
 enum {
         GAME_ONGOING,
         GAME_WON,
-        GAME_LOST
+        GAME_LOST,
+        GAME_LOCKED,
 } game_status = GAME_ONGOING;
 
 #define CURSOR_WASTE_POS (TABLEAU_PILES)

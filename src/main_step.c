@@ -13,7 +13,8 @@ extern struct {
 extern enum {
         GAME_ONGOING,
         GAME_WON,
-        GAME_LOST
+        GAME_LOST,
+        GAME_LOCKED,
 } game_status;
 
 #define CURSOR_WASTE_POS (TABLEAU_PILES)
@@ -57,11 +58,13 @@ int step(void) {
                         new_keys[i] = pressed;
                 }
         }
-        if (game_status == GAME_ONGOING) {
+        if (game_status != GAME_WON) {
                 game_secs = (uintmax_t)((now - game_start) / CLOCKS_PER_SEC);
                 if (KlondikeGame_is_won(&game)) {
                         game_status = GAME_WON;
                 } else if (!KlondikeGame_can_make_move(&game)) {
+                        game_status = GAME_LOCKED;
+                } else if (KlondikeGame_is_lost(&game)) {
                         game_status = GAME_LOST;
                 }
         }

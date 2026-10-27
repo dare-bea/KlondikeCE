@@ -16,7 +16,8 @@ extern struct {
 extern enum {
         GAME_ONGOING,
         GAME_WON,
-        GAME_LOST
+        GAME_LOST,
+        GAME_LOCKED,
 } game_status;
 
 #define CURSOR_WASTE_POS (TABLEAU_PILES)
@@ -333,6 +334,8 @@ int draw(void) {
                 fontlib_DrawString("GAME WON!");
         } else if (game_status == GAME_LOST) {
                 fontlib_DrawString("GAME UNSOLVABLE!");
+        } else if (game_status == GAME_LOCKED) {
+                fontlib_DrawString("GAME LOCKED!");
         }
 #ifdef DEBUG_CURSOR_INFO
         else {
