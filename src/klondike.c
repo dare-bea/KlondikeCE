@@ -281,9 +281,9 @@ bool KlondikeGame_is_lost(struct KlondikeGame const *game) {
                     && !game->tableau_down[t]
                     && !king_for_empty_tableau
                     && !all_royal_foundations
-                    && (top->rank == CARDRANK_COUNT - 1
+                    && (top->rank == CardRank_KING
                         || !(card_uses[top->rank + 1][top->suit]
-                             & (CardUses_TABLEAU_REVEALS | CardUses_STOCKWASTE_AVAILABLE))))
+                             & (CardUses_TABLEAU_TOP | CardUses_STOCKWASTE_AVAILABLE))))
                         continue;
                 if (_KlondikeGame_can_move_xf(game, top)) {
                         dbg_printf("FALSE (TF)\n");

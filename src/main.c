@@ -72,6 +72,13 @@ int main(void)
         if (!KlondikeGame_init(&game)) {
                 errno = 1, errline = __LINE__;
         }
+        if (KlondikeGame_is_won(&game)) {
+                game_status = GAME_WON;
+        } else if (!KlondikeGame_can_make_move(&game)) {
+                game_status = GAME_LOCKED;
+        } else if (KlondikeGame_is_lost(&game)) {
+                game_status = GAME_LOST;
+        }
 
         game_start = clock();
         while (!errno && !kb_On/* && !kb_IsDown(kb_KeyMode)*/) {
