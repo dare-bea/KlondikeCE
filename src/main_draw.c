@@ -68,7 +68,7 @@ static inline void render_card(struct Card const *card, unsigned x, uint8_t y) {
 
 int draw(void) {
         /* CALCULATE TABLEAU LENGTH */
-        size_t tab_len = 0;
+        size_t tab_len = 2;
         for (size_t c = 0; c < TABLEAU_PILES; ++c) {
                 size_t len = game.tableau_piles[c].length;
                 if (cursor.holding_cards && cursor.pos != cursor.from_pos && cursor.pos == c) {
