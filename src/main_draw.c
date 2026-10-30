@@ -48,7 +48,7 @@ static const char CARDSUIT_SYMBOLS[CARDSUIT_COUNT + 1] = "\x80\x81\x82\x83";
 #define DIM_CARDINFO_YOFF 3
 #define DIM_HOLDCARD_YOFF 4
 
-#define DIM_CONTROLINFO_X (GFX_LCD_WIDTH / 5 * 4 + 2)
+#define DIM_CONTROLINFO_X (DIM_TABLE_X + DIM_TABLE_DX * TABLEAU_PILES)
 #define DIM_CONTROLINFO_Y (GFX_LCD_HEIGHT - 9 * 3 - 17)
 
 #define DIM_GAMEINFO_X 4
@@ -95,19 +95,33 @@ int draw(void) {
         fontlib_SetLineSpacing(0, 1);
         fontlib_SetWindow(DIM_CONTROLINFO_X, DIM_CONTROLINFO_Y, GFX_LCD_WIDTH - DIM_CONTROLINFO_X, GFX_LCD_HEIGHT - DIM_CONTROLINFO_Y);
         fontlib_SetCursorPosition(DIM_CONTROLINFO_X, DIM_CONTROLINFO_Y);
-        fontlib_DrawString(
-                "ARROW: Cursor\n"
-                "CLEAR: Put back\n"
-                "ON: Quit");
+        if (game_status != GAME_WON)
+                fontlib_DrawString(
+                        "ARROW: Move cursor\n"
+                        "CLEAR: Put back cards\n"
+                        "ON: Quit (give up)");
+        else
+                fontlib_DrawString(
+                        "ARROW: Move cursor\n"
+                        "CLEAR: Put back cards\n"
+                        "ON: Quit");
         fontlib_SetWindowFullScreen();
 
         char CONTROL_TEXT[5][2][11] = {
                 {"MOVE TO", "FOUNDATION"},
                 {"DRAW 3", "FROM STOCK"},
+                {"QUICK SAVE", "& QUIT"},
                 {{0}, "UNDO MOVE"},
                 {{0}, {0}},
-                {{0}, {0}},
         };
+        if (!game.stock_waste.length)
+                memset(CONTROL_TEXT[1], 0, sizeof(CONTROL_TEXT[1]));
+        if (!game.move_history.length)
+                memset(CONTROL_TEXT[3], 0, sizeof(CONTROL_TEXT[3]));
+        if (game_status == GAME_WON) {
+                memset(CONTROL_TEXT[0], 0, sizeof(CONTROL_TEXT[0]));
+                memset(CONTROL_TEXT[2], 0, sizeof(CONTROL_TEXT[2]));
+        }
         strncpy(CONTROL_TEXT[4][1], !cursor.holding_cards ? (
                 cursor.pos == CURSOR_STOCK_POS ? "DRAW CARDS"
                 : cursor.pos == CURSOR_WASTE_POS ? "GRAB CARD" : "GRAB PILE")
@@ -128,11 +142,11 @@ int draw(void) {
                         fontlib_DrawString(CONTROL_TEXT[i][0]);
                         fontlib_SetCursorPosition(GFX_LCD_WIDTH / 5 * i + GFX_LCD_WIDTH / 10 - fontlib_GetStringWidth(CONTROL_TEXT[i][1]) / 2, GFX_LCD_HEIGHT - 7);
                         fontlib_DrawString(CONTROL_TEXT[i][1]);
-                }else if (*CONTROL_TEXT[i][0]) {
+                } else if (*CONTROL_TEXT[i][0]) {
                         fontlib_SetFont(font6x8, 0);
-                        fontlib_SetCursorPosition(GFX_LCD_WIDTH / 5 * i + GFX_LCD_WIDTH / 10 - fontlib_GetStringWidth(CONTROL_TEXT[i][0]) / 2, GFX_LCD_HEIGHT - 7 * 2);
+                        fontlib_SetCursorPosition(GFX_LCD_WIDTH / 5 * i + GFX_LCD_WIDTH / 10 - fontlib_GetStringWidth(CONTROL_TEXT[i][0]) / 2, GFX_LCD_HEIGHT - 15 + 8/2);
                         fontlib_DrawString(CONTROL_TEXT[i][0]);
-                }else if (*CONTROL_TEXT[i][1]) {
+                } else if (*CONTROL_TEXT[i][1]) {
                         fontlib_SetFont(font6x8, 0);
                         fontlib_SetCursorPosition(GFX_LCD_WIDTH / 5 * i + GFX_LCD_WIDTH / 10 - fontlib_GetStringWidth(CONTROL_TEXT[i][1]) / 2, GFX_LCD_HEIGHT - 15 + 8/2);
                         fontlib_DrawString(CONTROL_TEXT[i][1]);
@@ -371,7 +385,7 @@ int draw(void) {
         } else if (game_status == GAME_LOST) {
                 fontlib_DrawString("GAME LOST!");
         } else if (game_status == GAME_LOCKED) {
-                fontlib_DrawString("LOCK-OUT!");
+                fontlib_DrawString("LOCKOUT!");
         }
 #ifdef DEBUG_CURSOR_INFO
         else {

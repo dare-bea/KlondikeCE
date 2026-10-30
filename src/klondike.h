@@ -1,6 +1,7 @@
 #pragma once
 #include <stdbool.h>
 #include <stdint.h>
+#include <time.h>
 
 enum CardRank : int8_t {
         CardRank_ACE,  CardRank_TWO, CardRank_THREE, CardRank_FOUR,
@@ -32,13 +33,13 @@ struct MoveHistory {
                 MoveHistoryVariant_MOVE_TF,
                 MoveHistoryVariant_MOVE_WF,
         } variant;
+        size_t stock_remaining;
         union {
                 struct {size_t from_pile; size_t to_pile; size_t card_count;} move_tt;
                 struct {size_t to_pile;} move_wt;
                 struct {size_t from_pile; enum CardSuit suit; bool revealed_card;} move_tf;
                 struct {enum CardSuit suit;} move_wf;
         };
-        size_t stock_remaining;
 };
 
 #define VECTOR_T struct MoveHistory
@@ -49,16 +50,17 @@ struct MoveHistory {
 struct KlondikeGame {
         Vector_Card start_deck;
         Vector_MoveHistory move_history;
-        size_t tableau_down[TABLEAU_PILES];
         Vector_Card tableau_piles[TABLEAU_PILES];
+        size_t tableau_down[TABLEAU_PILES];
+        Vector_Card stock_waste;
+        size_t stock_remaining;
         struct {
                 bool has_cards;
                 enum CardRank top_rank;
         } foundations[CARDSUIT_COUNT];
-        Vector_Card stock_waste;
-        size_t stock_remaining;
         unsigned move_count;
         unsigned undo_count;
+        clock_t timer;
 };
 
 #ifndef ONE_CARD_PER_STOCK_DRAW

@@ -139,6 +139,26 @@ bool KlondikeGame_invariants_hold(struct KlondikeGame const *game) {
                 return false;
         if (game->stock_waste.length < game->stock_remaining)
                 return false;
+        for (size_t i = 0; i < CARDSUIT_COUNT; ++i) {
+                if (game->foundations[i].has_cards
+                    && (game->foundations[i].top_rank < 0
+                        || CARDRANK_COUNT <= game->foundations[i].top_rank))
+                        return false;
+        }
+        for (size_t i = 0; i < game->stock_waste.length; ++i) {
+                struct Card const *card = Vector_Card_at_const(&game->stock_waste, i);
+                if (!card || card->rank < 0 || CARDRANK_COUNT <= card->rank
+                        || card->suit < 0 || CARDSUIT_COUNT <= card->suit)
+                        return false;
+        }
+        for (size_t c = 0; c < TABLEAU_PILES; ++c) {
+                for (size_t r = 0; r < game->tableau_piles[c].length; ++r) {
+                        struct Card const *card = Vector_Card_at_const(&game->tableau_piles[c], r);
+                        if (!card || card->rank < 0 || CARDRANK_COUNT <= card->rank
+                            || card->suit < 0 || CARDSUIT_COUNT <= card->suit)
+                                return false;
+                }
+        }
         for (size_t c = 0; c < TABLEAU_PILES; ++c) {
                 if (game->tableau_piles[c].length == 0) {
                         if (game->tableau_down[c] != 0)
@@ -613,6 +633,8 @@ static inline bool KlondikeGame_undo_move_tf(struct KlondikeGame *game, struct M
                         .suit = last_move.move_tf.suit
                 }))
                 return false;
+        if (last_move.move_tf.revealed_card)
+                ++game->tableau_down[last_move.move_tf.from_pile];
         if (game->foundations[last_move.move_tf.suit].top_rank == CardRank_ACE) {
                 game->foundations[last_move.move_tf.suit].has_cards = false;
         } else {
