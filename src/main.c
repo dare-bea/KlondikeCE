@@ -72,11 +72,11 @@ int main(void)
                 if (save) {
                         char buf[11] = {0};
                         if (fread(buf, sizeof(char), 10, save) != 10) {
-                                // errno = 7, errline = __LINE__;
+                                // main_errno = 7, errline = __LINE__;
                                 goto open_save_error;
                         }
                         if (strncmp(buf, "KLONDIKE\n", 9)) {
-                                // errno = 7, errline = __LINE__;
+                                // main_errno = 7, errline = __LINE__;
                                 goto open_save_error;
                         }
                         switch (buf[9]) {
@@ -93,7 +93,9 @@ int main(void)
                                         main_errno = 7, main_errline = __LINE__;
                                         break;
                         }
-                        if (!KlondikeGame_invariants_hold(&game)) {
+                        if (main_errno) {
+                                remove("KLONDIKE");
+                        } if (!KlondikeGame_invariants_hold(&game)) {
                                 remove("KLONDIKE");
                                 main_errno = 4, main_errline = __LINE__;
                         }

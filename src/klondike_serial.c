@@ -94,5 +94,7 @@ bool KlondikeGame_fwrite(struct KlondikeGame const *restrict game, FILE *restric
                 return false;
         if (fwrite(&game->timer, sizeof(game->timer), 1, stream) != 1)
                 return false;
+        if (fwrite(&game->status, sizeof(game->status), 1, stream) != 1)
+                return false;
         return true;
 }

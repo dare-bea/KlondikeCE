@@ -101,22 +101,24 @@ int draw(void) {
                         "ON: Quit");
         fontlib_SetWindowFullScreen();
 
-        char CONTROL_TEXT[5][2][11] = {
+        char *CONTROL_TEXT[5][2] = {
                 {"MOVE TO", "FOUNDATION"},
                 {"DRAW 3", "FROM STOCK"},
                 {"QUICK SAVE", "& QUIT"},
-                {{0}, "UNDO MOVE"},
-                {{0}, {0}},
+                {NULL, "UNDO MOVE"},
+                {NULL, NULL},
         };
-        if (!game.move_history.length || game.status == KlondikeGameStatus_WIN)
-                memset(CONTROL_TEXT[3], 0, sizeof(CONTROL_TEXT[3]));
-        strncpy(CONTROL_TEXT[4][1], !cursor.holding_cards ? (
-                cursor.pos == CURSOR_STOCK_POS ? "DRAW CARDS"
-                : cursor.pos == CURSOR_WASTE_POS ? "GRAB CARD" : "GRAB PILE")
-        : cursor.from_pos == cursor.pos ? "PUT BACK"
-        : cursor.from_pos == CURSOR_WASTE_POS ? "MOVE CARD" : "MOVE PILE", sizeof(CONTROL_TEXT[4][1]) - sizeof(char));
+        if (!game.move_history.length || game.status == KlondikeGameStatus_WIN) {
+                CONTROL_TEXT[3][0] = NULL;
+                CONTROL_TEXT[3][1] = NULL;
+        }
+        CONTROL_TEXT[4][1] = !cursor.holding_cards ? (
+                        cursor.pos == CURSOR_STOCK_POS ? "DRAW CARDS"
+                        : cursor.pos == CURSOR_WASTE_POS ? "GRAB CARD" : "GRAB PILE")
+                : cursor.from_pos == cursor.pos ? "PUT BACK"
+                : cursor.from_pos == CURSOR_WASTE_POS ? "MOVE CARD" : "MOVE PILE";
         for (size_t i = 0; i < 5; ++i) {
-                if (!*CONTROL_TEXT[i][0] && !*CONTROL_TEXT[i][1])
+                if (!CONTROL_TEXT[i][0] && !CONTROL_TEXT[i][1])
                         continue;
                 gfx_SetColor(GAMEPALETTE_CLUB);
                 gfx_FillRectangle(GFX_LCD_WIDTH / 5 * i, GFX_LCD_HEIGHT - 7 * 2 - 1, GFX_LCD_WIDTH / 5, 7 * 2 + 1);
@@ -124,17 +126,17 @@ int draw(void) {
                 gfx_HorizLine(GFX_LCD_WIDTH / 5 * i + 1, GFX_LCD_HEIGHT - 7 * 2 - 2, GFX_LCD_WIDTH / 5 - 2);
                 gfx_VertLine(GFX_LCD_WIDTH / 5 * i, GFX_LCD_HEIGHT - 7 * 2 - 1, 7 * 2 + 1);
                 gfx_VertLine(GFX_LCD_WIDTH / 5 * (i + 1) - 1, GFX_LCD_HEIGHT - 7 * 2 - 1, 7 * 2 + 1);
-                if (*CONTROL_TEXT[i][0] && *CONTROL_TEXT[i][1]) {
+                if (CONTROL_TEXT[i][0] && CONTROL_TEXT[i][1]) {
                         fontlib_SetFont(font6x6, 0);
                         fontlib_SetCursorPosition(GFX_LCD_WIDTH / 5 * i + GFX_LCD_WIDTH / 10 - fontlib_GetStringWidth(CONTROL_TEXT[i][0]) / 2, GFX_LCD_HEIGHT - 7 * 2);
                         fontlib_DrawString(CONTROL_TEXT[i][0]);
                         fontlib_SetCursorPosition(GFX_LCD_WIDTH / 5 * i + GFX_LCD_WIDTH / 10 - fontlib_GetStringWidth(CONTROL_TEXT[i][1]) / 2, GFX_LCD_HEIGHT - 7);
                         fontlib_DrawString(CONTROL_TEXT[i][1]);
-                } else if (*CONTROL_TEXT[i][0]) {
+                } else if (CONTROL_TEXT[i][0]) {
                         fontlib_SetFont(font6x8, 0);
                         fontlib_SetCursorPosition(GFX_LCD_WIDTH / 5 * i + GFX_LCD_WIDTH / 10 - fontlib_GetStringWidth(CONTROL_TEXT[i][0]) / 2, GFX_LCD_HEIGHT - 15 + 8/2);
                         fontlib_DrawString(CONTROL_TEXT[i][0]);
-                } else if (*CONTROL_TEXT[i][1]) {
+                } else if (CONTROL_TEXT[i][1]) {
                         fontlib_SetFont(font6x8, 0);
                         fontlib_SetCursorPosition(GFX_LCD_WIDTH / 5 * i + GFX_LCD_WIDTH / 10 - fontlib_GetStringWidth(CONTROL_TEXT[i][1]) / 2, GFX_LCD_HEIGHT - 15 + 8/2);
                         fontlib_DrawString(CONTROL_TEXT[i][1]);

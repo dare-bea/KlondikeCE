@@ -33,11 +33,11 @@ struct MoveHistory {
                 MoveHistoryVariant_MOVE_TF,
                 MoveHistoryVariant_MOVE_WF,
         } variant;
-        size_t stock_remaining;
+        uint8_t stock_remaining;
         union {
-                struct {size_t from_pile; size_t to_pile; size_t card_count;} move_tt;
-                struct {size_t to_pile;} move_wt;
-                struct {size_t from_pile; enum CardSuit suit; bool revealed_card;} move_tf;
+                struct {uint8_t from_pile; uint8_t to_pile; uint8_t card_count;} move_tt;
+                struct {uint8_t to_pile;} move_wt;
+                struct {uint8_t from_pile; enum CardSuit suit; bool revealed_card;} move_tf;
                 struct {enum CardSuit suit;} move_wf;
         };
 };
