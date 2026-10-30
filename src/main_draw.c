@@ -114,14 +114,8 @@ int draw(void) {
                 {{0}, "UNDO MOVE"},
                 {{0}, {0}},
         };
-        if (!game.stock_waste.length)
-                memset(CONTROL_TEXT[1], 0, sizeof(CONTROL_TEXT[1]));
-        if (!game.move_history.length)
+        if (!game.move_history.length || game_status == GAME_WON)
                 memset(CONTROL_TEXT[3], 0, sizeof(CONTROL_TEXT[3]));
-        if (game_status == GAME_WON) {
-                memset(CONTROL_TEXT[0], 0, sizeof(CONTROL_TEXT[0]));
-                memset(CONTROL_TEXT[2], 0, sizeof(CONTROL_TEXT[2]));
-        }
         strncpy(CONTROL_TEXT[4][1], !cursor.holding_cards ? (
                 cursor.pos == CURSOR_STOCK_POS ? "DRAW CARDS"
                 : cursor.pos == CURSOR_WASTE_POS ? "GRAB CARD" : "GRAB PILE")

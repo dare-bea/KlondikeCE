@@ -99,14 +99,14 @@ int main(void)
                                         errno = 7, errline = __LINE__;
                                         break;
                         }
+                        if (!KlondikeGame_invariants_hold(&game)) {
+                                remove("KLONDIKE");
+                                errno = 4, errline = __LINE__;
+                        }
                 open_save_error:;
                         if (fclose(save) == EOF) {
-                                errno = 6, errline = __LINE__;
+                                errno = errno ? errno : 6, errline = __LINE__;
                         }
-                }
-                if (!KlondikeGame_invariants_hold(&game)) {
-                        remove("KLONDIKE");
-                        errno = 4, errline = __LINE__;
                 }
         }
         if (!loaded_save_data && !errno) {
@@ -128,7 +128,7 @@ int main(void)
         game_start = clock();
         bool save_and_quit = false;
         while (!errno && !kb_On) {
-                if (kb_IsDown(kb_KeyZoom) && game_status != GAME_WON) {
+                if (kb_IsDown(kb_KeyZoom)) {
                         save_and_quit = true;
                         break;
                 }
