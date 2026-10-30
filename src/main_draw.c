@@ -199,7 +199,7 @@ int draw(void) {
 
         // Waste
         if (cursor.holding_cards && cursor.from_pos == CURSOR_WASTE_POS && cursor.pos <= CURSOR_WASTE_POS) {
-                struct Card const *waste_card = Vector_structCard_at_const(
+                struct Card const *waste_card = Vector_Card_at_const(
                         &game.stock_waste,
                         game.stock_remaining + (cursor.pos == CURSOR_WASTE_POS ? 0 : 1));
                 if (waste_card) {
@@ -211,7 +211,7 @@ int draw(void) {
                                 DIM_WASTE_Y - (cursor.pos == CURSOR_WASTE_POS ? DIM_HOLDCARD_YOFF : 0));
                 }
         } else {
-                struct Card const *waste_card = Vector_structCard_at_const(
+                struct Card const *waste_card = Vector_Card_at_const(
                         &game.stock_waste, game.stock_remaining);
                 if (waste_card) {
                         render_card(waste_card, DIM_WASTE_X, DIM_WASTE_Y);
@@ -232,7 +232,7 @@ int draw(void) {
                 }
                 if (!cursor.holding_cards || c != cursor.from_pos || cursor.pos >= CURSOR_WASTE_POS) {
                         for (size_t r = game.tableau_down[c]; r < game.tableau_piles[c].length; ++r) {
-                                struct Card const *card = Vector_structCard_at_const(
+                                struct Card const *card = Vector_Card_at_const(
                                         &game.tableau_piles[c], r);
                                 if (!card) return __LINE__;
                                 render_card(card,
@@ -248,7 +248,7 @@ int draw(void) {
                         for (size_t r = game.tableau_down[cursor.from_pos]; r < game.tableau_piles[cursor.from_pos].length; ++r) {
                                 size_t r_adjusted = cursor.from_pos == cursor.pos ? r
                                         : r - game.tableau_down[cursor.from_pos] + game.tableau_piles[cursor.pos].length;
-                                struct Card const *card = Vector_structCard_at_const(
+                                struct Card const *card = Vector_Card_at_const(
                                         &game.tableau_piles[cursor.from_pos], r);
                                 if (!card) return __LINE__;
                                 render_card(card,
@@ -257,7 +257,7 @@ int draw(void) {
                         }
                 } else {
                         size_t r = game.tableau_piles[cursor.pos].length;
-                        struct Card const *card = Vector_structCard_at_const(&game.stock_waste,
+                        struct Card const *card = Vector_Card_at_const(&game.stock_waste,
                                 game.stock_remaining);
                         if (!card) return __LINE__;
                         render_card(card,

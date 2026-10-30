@@ -22,7 +22,7 @@ struct Card {
 };
 
 #define VECTOR_T struct Card
-#define VECTOR_NAME Vector_structCard
+#define VECTOR_NAME Vector_Card
 #include "vector.h"
 
 struct MoveHistory {
@@ -42,20 +42,20 @@ struct MoveHistory {
 };
 
 #define VECTOR_T struct MoveHistory
-#define VECTOR_NAME Vector_structMoveHistory
+#define VECTOR_NAME Vector_MoveHistory
 #include "vector.h"
 
 #define TABLEAU_PILES 7
 struct KlondikeGame {
-        Vector_structCard start_deck;
-        Vector_structMoveHistory move_history;
+        Vector_Card start_deck;
+        Vector_MoveHistory move_history;
         size_t tableau_down[TABLEAU_PILES];
-        Vector_structCard tableau_piles[TABLEAU_PILES];
+        Vector_Card tableau_piles[TABLEAU_PILES];
         struct {
                 bool has_cards;
                 enum CardRank top_rank;
         } foundations[CARDSUIT_COUNT];
-        Vector_structCard stock_waste;
+        Vector_Card stock_waste;
         size_t stock_remaining;
         unsigned move_count;
         unsigned undo_count;
