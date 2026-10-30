@@ -20,16 +20,15 @@ extern enum {
 #define CURSOR_WASTE_POS (TABLEAU_PILES)
 #define CURSOR_STOCK_POS (TABLEAU_PILES + 1)
 
-extern unsigned move_count;
 extern uintmax_t game_secs;
 extern clock_t game_start;
 
-#define INPUT_KEYS_COUNT 7
+#define INPUT_KEYS_COUNT 8
 enum InputKeyIndex {
-        IKIdx_Left, IKIdx_Right, IKIdx_Yequ, IKIdx_Window, IKIdx_Clear, IKIdx_Enter, IKIdx_Graph
+        IKIdx_Left, IKIdx_Right, IKIdx_Yequ, IKIdx_Window, IKIdx_Clear, IKIdx_Enter, IKIdx_Graph, IKIdx_Zoom,
 };
 static const kb_lkey_t INPUT_KEYS[INPUT_KEYS_COUNT] = {
-        kb_KeyLeft, kb_KeyRight, kb_KeyYequ, kb_KeyWindow, kb_KeyClear, kb_KeyEnter, kb_KeyGraph
+        kb_KeyLeft, kb_KeyRight, kb_KeyYequ, kb_KeyWindow, kb_KeyClear, kb_KeyEnter, kb_KeyGraph, kb_KeyZoom,
 };
 
 static clock_t auto_repeat[INPUT_KEYS_COUNT] = {0};
@@ -65,7 +64,7 @@ int step(void) {
                 if (!cursor.holding_cards) {
                         if (cursor.pos == CURSOR_STOCK_POS) {
                                 int8_t move_res = KlondikeGame_draw_stock(&game, STOCK_DRAWN_CARDS);
-                                if (move_res == 1) {
+                                if (move_res > 0) {
                                         // ++move_count;
                                 } else if (move_res < 0) {
                                         return __LINE__;
@@ -81,8 +80,7 @@ int step(void) {
                 } else if (cursor.from_pos < TABLEAU_PILES && cursor.pos < TABLEAU_PILES) {
                         int8_t move_res = KlondikeGame_move_tt(
                                 &game, cursor.from_pos, cursor.pos);
-                        if (move_res == 1) {
-                                ++move_count;
+                        if (move_res > 0) {
                                 cursor.holding_cards = false;
                                 if (KlondikeGame_is_won(&game)) {
                                         game_status = GAME_WON;
@@ -97,8 +95,7 @@ int step(void) {
                 } else if (cursor.from_pos == CURSOR_WASTE_POS && cursor.pos < TABLEAU_PILES) {
                         int8_t move_res = KlondikeGame_move_wt(
                                 &game, cursor.pos);
-                        if (move_res == 1) {
-                                ++move_count;
+                        if (move_res > 0) {
                                 cursor.holding_cards = false;
                                 if (KlondikeGame_is_won(&game)) {
                                         game_status = GAME_WON;
@@ -119,8 +116,7 @@ int step(void) {
                 size_t pos = cursor.holding_cards ? cursor.from_pos : cursor.pos;
                 if (pos == CURSOR_WASTE_POS) {
                         int8_t move_res = KlondikeGame_move_wf(&game);
-                        if (move_res == 1) {
-                                ++move_count;
+                        if (move_res > 0) {
                                 cursor.holding_cards = false;
                                 if (KlondikeGame_is_won(&game)) {
                                         game_status = GAME_WON;
@@ -141,8 +137,7 @@ int step(void) {
                         }
                 } else {
                         int8_t move_res = KlondikeGame_move_tf(&game, pos);
-                        if (move_res == 1) {
-                                ++move_count;
+                        if (move_res > 0) {
                                 if (KlondikeGame_is_won(&game)) {
                                         game_status = GAME_WON;
                                 } else if (!KlondikeGame_can_make_move(&game)) {
@@ -170,7 +165,7 @@ int step(void) {
         }
         if (new_keys[IKIdx_Window]) {
                 int8_t move_res = KlondikeGame_draw_stock(&game, STOCK_DRAWN_CARDS);
-                if (move_res == 1) {
+                if (move_res > 0) {
                         // ++move_count;
                 } else if (move_res < 0) {
                         return __LINE__;
@@ -186,6 +181,22 @@ int step(void) {
                         ++cursor.pos;
                 else
                         cursor.pos = 0;
+        }
+        if (new_keys[IKIdx_Zoom] && game_status != GAME_WON) {
+                int8_t move_res = KlondikeGame_undo_move(&game);
+                if (move_res > 0) {
+                        if (KlondikeGame_is_won(&game)) {
+                                game_status = GAME_WON;
+                        } else if (!KlondikeGame_can_make_move(&game)) {
+                                game_status = GAME_LOCKED;
+                        } else if (KlondikeGame_is_lost(&game)) {
+                                game_status = GAME_LOST;
+                        } else {
+                                game_status = GAME_ONGOING;
+                        }
+                } else if (move_res < 0) {
+                        return __LINE__;
+                }
         }
         return 0;
 }

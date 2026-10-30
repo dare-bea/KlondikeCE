@@ -40,7 +40,6 @@ enum {
 #define CURSOR_WASTE_POS (TABLEAU_PILES)
 #define CURSOR_STOCK_POS (TABLEAU_PILES + 1)
 
-unsigned move_count = 0;
 uintmax_t game_secs = 0;
 clock_t game_start = 0;
 

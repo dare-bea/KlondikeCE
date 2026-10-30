@@ -48,6 +48,9 @@ static inline bool matches_f(struct Card const *from_card, bool has_cards, enum 
 
 void KlondikeGame_free(struct KlondikeGame *game) {
         if (!game) return;
+        Vector_structCard_free(&game->start_deck);
+        Vector_structMoveHistory_free(&game->move_history);
+        game->move_count = 0;
         for (size_t i = 0; i < TABLEAU_PILES; ++i) {
                 game->tableau_down[i] = 0;
                 Vector_structCard_free(&game->tableau_piles[i]);
@@ -62,26 +65,34 @@ void KlondikeGame_free(struct KlondikeGame *game) {
 bool _KlondikeGame_attempt_init(struct KlondikeGame *game) {
         if (!game) return false;
         KlondikeGame_free(game);
+        if (!Vector_structCard_reserve_exact(&game->start_deck, CARDRANK_COUNT * CARDSUIT_COUNT))
+                return false;
         if (!Vector_structCard_reserve_exact(&game->stock_waste, CARDRANK_COUNT * CARDSUIT_COUNT))
+                return false;
+        if (!Vector_structMoveHistory_reserve(&game->move_history, 100))
                 return false;
         for (enum CardRank r = 0; r < CARDRANK_COUNT; ++r)
         for (enum CardSuit s = 0; s < CARDSUIT_COUNT; ++s) {
-                if (!Vector_structCard_push(&game->stock_waste,
+                if (!Vector_structCard_push(&game->start_deck,
                     (struct Card){
                     .rank = r, .suit = s,
                     }))
                         return false;
         }
-        for (size_t i = 1; i < game->stock_waste.length; ++i) {
+        for (size_t i = 1; i < game->start_deck.length; ++i) {
                 size_t j = i == SIZE_MAX ? rand() : rand() % (i + 1);
-                struct Card *ip = Vector_structCard_at(&game->stock_waste, i);
-                struct Card *jp = Vector_structCard_at(&game->stock_waste, j);
+                struct Card *ip = Vector_structCard_at(&game->start_deck, i);
+                struct Card *jp = Vector_structCard_at(&game->start_deck, j);
                 if (!ip || !jp)
                         return false;
                 struct Card tmp = *ip;
                 *ip = *jp;
                 *jp = tmp;
         }
+        if (!Vector_structCard_extend(&game->stock_waste,
+                        Vector_structCard_at_const(&game->start_deck, 0),
+                        game->start_deck.length))
+                return false;
         for (size_t i = 0; i < TABLEAU_PILES; ++i) {
                 if (!Vector_structCard_reserve_exact(&game->tableau_piles[i], 8))
                         return false;
@@ -496,15 +507,22 @@ __attribute__((nonnull(1)))
 int8_t KlondikeGame_move_tt(struct KlondikeGame *game, size_t from_pile, size_t to_pile) {
         if (!KlondikeGame_can_move_tt(game, from_pile, to_pile))
                 return 0;
+        size_t card_count = game->tableau_piles[from_pile].length - game->tableau_down[from_pile];
         if (!Vector_structCard_extend(&game->tableau_piles[to_pile],
                 Vector_structCard_at(&game->tableau_piles[from_pile],
                         game->tableau_down[from_pile]),
-                game->tableau_piles[from_pile].length - game->tableau_down[from_pile]))
+                card_count))
                 return -1;
         game->tableau_piles[from_pile].length = game->tableau_down[from_pile];
         if (game->tableau_down[from_pile]) {
                 --game->tableau_down[from_pile];
         }
+        if (!Vector_structMoveHistory_push(&game->move_history, (struct MoveHistory){
+                MoveHistoryVariant_MOVE_TT, .move_tt = {from_pile, to_pile, card_count},
+                .stock_remaining = game->stock_remaining,
+        }))
+                return -2;
+        ++game->move_count;
         return 1;
 }
 
@@ -517,6 +535,12 @@ int8_t KlondikeGame_move_wt(struct KlondikeGame *game, size_t to_pile) {
                 return -1;
         if (!Vector_structCard_push(&game->tableau_piles[to_pile], from_card))
                 return -1;
+        if (!Vector_structMoveHistory_push(&game->move_history, (struct MoveHistory){
+                MoveHistoryVariant_MOVE_WT, .move_wt = {to_pile},
+                .stock_remaining = game->stock_remaining,
+        }))
+                return -2;
+        ++game->move_count;
         return 1;
 }
 
@@ -529,10 +553,16 @@ int8_t KlondikeGame_move_tf(struct KlondikeGame *game, size_t from_pile) {
                 return -1;
         game->foundations[from_card.suit].has_cards = true;
         game->foundations[from_card.suit].top_rank = from_card.rank;
-        if (game->tableau_down[from_pile]
-            && game->tableau_down[from_pile] == game->tableau_piles[from_pile].length) {
+        bool reveal_card = game->tableau_down[from_pile]
+            && game->tableau_down[from_pile] == game->tableau_piles[from_pile].length;
+        if (reveal_card)
                 --game->tableau_down[from_pile];
-        }
+        if (!Vector_structMoveHistory_push(&game->move_history, (struct MoveHistory){
+                MoveHistoryVariant_MOVE_TF, .move_tf = {from_pile, from_card.suit, reveal_card},
+                .stock_remaining = game->stock_remaining,
+        }))
+                return -2;
+        ++game->move_count;
         return 1;
 }
 
@@ -545,5 +575,113 @@ int8_t KlondikeGame_move_wf(struct KlondikeGame *game) {
                 return -1;
         game->foundations[from_card.suit].has_cards = true;
         game->foundations[from_card.suit].top_rank = from_card.rank;
+        if (!Vector_structMoveHistory_push(&game->move_history, (struct MoveHistory){
+                MoveHistoryVariant_MOVE_WF, .move_wf = {from_card.suit},
+                .stock_remaining = game->stock_remaining,
+        }))
+                return -2;
+        ++game->move_count;
         return 1;
+}
+
+__attribute__((nonnull(1)))
+static inline bool KlondikeGame_undo_move_tt(struct KlondikeGame *game, struct MoveHistory last_move) {
+        struct Card const *card_array = Vector_structCard_at_const(
+                &game->tableau_piles[last_move.move_tt.to_pile],
+                game->tableau_piles[last_move.move_tt.to_pile].length
+                        - last_move.move_tt.card_count);
+        if (!card_array)
+                return false;
+        game->tableau_down[last_move.move_tt.from_pile] =
+                game->tableau_piles[last_move.move_tt.from_pile].length;
+        if (!Vector_structCard_extend(
+                &game->tableau_piles[last_move.move_tt.from_pile],
+                card_array, last_move.move_tt.card_count))
+                return false;
+        game->tableau_piles[last_move.move_tt.to_pile].length -= last_move.move_tt.card_count;
+        return true;
+}
+
+__attribute__((nonnull(1)))
+static inline bool KlondikeGame_undo_move_tf(struct KlondikeGame *game, struct MoveHistory last_move) {
+        if (!game->foundations[last_move.move_tf.suit].has_cards)
+                return false;
+        if (!Vector_structCard_push(
+                &game->tableau_piles[last_move.move_tf.from_pile],
+                (struct Card) {
+                        .rank = game->foundations[last_move.move_tf.suit].top_rank,
+                        .suit = last_move.move_tf.suit
+                }))
+                return false;
+        if (game->foundations[last_move.move_tf.suit].top_rank == CardRank_ACE) {
+                game->foundations[last_move.move_tf.suit].has_cards = false;
+        } else {
+                --game->foundations[last_move.move_tf.suit].top_rank;
+        }
+        return true;
+}
+
+__attribute__((nonnull(1)))
+static inline bool KlondikeGame_undo_move_wt(struct KlondikeGame *game, struct MoveHistory last_move) {
+        struct Card const *card = Vector_structCard_last(
+                &game->tableau_piles[last_move.move_wt.to_pile]);
+        if (!card)
+                return false;
+        if (!Vector_structCard_insert(&game->stock_waste, last_move.stock_remaining, *card))
+                return false;
+        --game->tableau_piles[last_move.move_wt.to_pile].length;
+        return true;
+}
+
+__attribute__((nonnull(1)))
+static inline bool KlondikeGame_undo_move_wf(struct KlondikeGame *game, struct MoveHistory last_move) {
+        if (!game->foundations[last_move.move_wf.suit].has_cards)
+                return false;
+        if (!Vector_structCard_insert(&game->stock_waste, last_move.stock_remaining,
+                (struct Card) {
+                        .rank = game->foundations[last_move.move_tf.suit].top_rank,
+                        .suit = last_move.move_tf.suit
+                }))
+                return false;
+        if (game->foundations[last_move.move_tf.suit].top_rank == CardRank_ACE) {
+                game->foundations[last_move.move_tf.suit].has_cards = false;
+        } else {
+                --game->foundations[last_move.move_tf.suit].top_rank;
+        }
+        return true;
+}
+
+__attribute__((nonnull(1)))
+int8_t KlondikeGame_undo_move(struct KlondikeGame *game) {
+        assert(KlondikeGame_invariants_hold(game));
+        struct MoveHistory last_move;
+        if (!Vector_structMoveHistory_pop(&game->move_history, &last_move))
+                return 0;
+        switch (last_move.variant) {
+                case MoveHistoryVariant_MOVE_TT: {
+                        if (!KlondikeGame_undo_move_tt(game, last_move))
+                                return -1;
+                        break;
+                }
+                case MoveHistoryVariant_MOVE_TF: {
+                        if (!KlondikeGame_undo_move_tf(game, last_move))
+                                return -1;
+                        break;
+                }
+                case MoveHistoryVariant_MOVE_WT: {
+                        if (!KlondikeGame_undo_move_wt(game, last_move))
+                                return -1;
+                        break;
+                }
+                case MoveHistoryVariant_MOVE_WF: {
+                        if (!KlondikeGame_undo_move_wf(game, last_move))
+                                return -1;
+                        break;
+                }
+                default: return -1;
+        }
+        game->stock_remaining = last_move.stock_remaining;
+        --game->move_count;
+        ++game->undo_count;
+        return last_move.variant;
 }

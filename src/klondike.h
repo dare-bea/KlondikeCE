@@ -25,8 +25,30 @@ struct Card {
 #define VECTOR_NAME Vector_structCard
 #include "vector.h"
 
+struct MoveHistory {
+        enum MoveHistoryVariant : int8_t {
+                MoveHistoryVariant_MOVE_TT = 1,
+                MoveHistoryVariant_MOVE_WT,
+                MoveHistoryVariant_MOVE_TF,
+                MoveHistoryVariant_MOVE_WF,
+        } variant;
+        union {
+                struct {size_t from_pile; size_t to_pile; size_t card_count;} move_tt;
+                struct {size_t to_pile;} move_wt;
+                struct {size_t from_pile; enum CardSuit suit; bool revealed_card;} move_tf;
+                struct {enum CardSuit suit;} move_wf;
+        };
+        size_t stock_remaining;
+};
+
+#define VECTOR_T struct MoveHistory
+#define VECTOR_NAME Vector_structMoveHistory
+#include "vector.h"
+
 #define TABLEAU_PILES 7
 struct KlondikeGame {
+        Vector_structCard start_deck;
+        Vector_structMoveHistory move_history;
         size_t tableau_down[TABLEAU_PILES];
         Vector_structCard tableau_piles[TABLEAU_PILES];
         struct {
@@ -35,6 +57,8 @@ struct KlondikeGame {
         } foundations[CARDSUIT_COUNT];
         Vector_structCard stock_waste;
         size_t stock_remaining;
+        unsigned move_count;
+        unsigned undo_count;
 };
 
 #ifndef ONE_CARD_PER_STOCK_DRAW
@@ -69,6 +93,9 @@ __attribute__((nonnull(1)))
 int8_t KlondikeGame_move_tf(struct KlondikeGame *game, size_t from_pile);
 __attribute__((nonnull(1)))
 int8_t KlondikeGame_move_wf(struct KlondikeGame *game);
+
+__attribute__((nonnull(1)))
+int8_t KlondikeGame_undo_move(struct KlondikeGame *game);
 
 __attribute__((nonnull(1)))
 bool KlondikeGame_is_won(struct KlondikeGame const *game);

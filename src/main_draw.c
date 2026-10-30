@@ -23,7 +23,6 @@ extern enum {
 #define CURSOR_WASTE_POS (TABLEAU_PILES)
 #define CURSOR_STOCK_POS (TABLEAU_PILES + 1)
 
-extern unsigned move_count;
 extern uintmax_t game_secs;
 
 static const char CARDRANK_SYMBOLS[CARDRANK_COUNT + 1] = "A23456789\x7FJQK";
@@ -33,7 +32,7 @@ static const char CARDSUIT_SYMBOLS[CARDSUIT_COUNT + 1] = "\x80\x81\x82\x83";
 #define DIM_TABLE_Y 16
 #define DIM_TABLE_DX 32
 #define DIM_TABLE_MAX_DY 24
-#define DIM_TABLE_HEIGHT (GFX_LCD_HEIGHT - 16 /* top */ - 12 /* bottom */)
+#define DIM_TABLE_HEIGHT (GFX_LCD_HEIGHT - 16 /* top */ - 8 - 17 /* bottom */)
 
 #define DIM_WASTE_X 240
 #define DIM_WASTE_Y 24
@@ -49,11 +48,11 @@ static const char CARDSUIT_SYMBOLS[CARDSUIT_COUNT + 1] = "\x80\x81\x82\x83";
 #define DIM_CARDINFO_YOFF 3
 #define DIM_HOLDCARD_YOFF 4
 
-#define DIM_CONTROLINFO_X (DIM_TABLE_X + DIM_TABLE_DX * TABLEAU_PILES - 3)
-#define DIM_CONTROLINFO_Y (DIM_FOUND_Y + DIM_FOUND_DY * 2 - 10)
+#define DIM_CONTROLINFO_X (GFX_LCD_WIDTH / 5 * 4 + 2)
+#define DIM_CONTROLINFO_Y (GFX_LCD_HEIGHT - 9 * 3 - 17)
 
 #define DIM_GAMEINFO_X 4
-#define DIM_GAMEINFO_Y (GFX_LCD_HEIGHT - 8 - 4)
+#define DIM_GAMEINFO_Y (GFX_LCD_HEIGHT - 8 - 7 * 2 - 3)
 
 
 __attribute__((nonnull(1)))
@@ -97,13 +96,48 @@ int draw(void) {
         fontlib_SetWindow(DIM_CONTROLINFO_X, DIM_CONTROLINFO_Y, GFX_LCD_WIDTH - DIM_CONTROLINFO_X, GFX_LCD_HEIGHT - DIM_CONTROLINFO_Y);
         fontlib_SetCursorPosition(DIM_CONTROLINFO_X, DIM_CONTROLINFO_Y);
         fontlib_DrawString(
-                "LEFT/RIGHT: Cursor\n"
-                "F5: Select/move pile\n"
-                "CLEAR: Deselect pile\n"
-                "F1: Play to foundation\n"
-                "F2: Draw 3 from stock\n"
+                "ARROW: Cursor\n"
+                "CLEAR: Put back\n"
                 "ON: Quit");
         fontlib_SetWindowFullScreen();
+
+        char CONTROL_TEXT[5][2][11] = {
+                {"MOVE TO", "FOUNDATION"},
+                {"DRAW 3", "FROM STOCK"},
+                {{0}, "UNDO MOVE"},
+                {{0}, {0}},
+                {{0}, {0}},
+        };
+        strncpy(CONTROL_TEXT[4][1], !cursor.holding_cards ? (
+                cursor.pos == CURSOR_STOCK_POS ? "DRAW CARDS"
+                : cursor.pos == CURSOR_WASTE_POS ? "GRAB CARD" : "GRAB PILE")
+        : cursor.from_pos == cursor.pos ? "PUT BACK"
+        : cursor.from_pos == CURSOR_WASTE_POS ? "MOVE CARD" : "MOVE PILE", sizeof(CONTROL_TEXT[4][1]) - sizeof(char));
+        for (size_t i = 0; i < 5; ++i) {
+                if (!*CONTROL_TEXT[i][0] && !*CONTROL_TEXT[i][1])
+                        continue;
+                gfx_SetColor(GAMEPALETTE_CLUB);
+                gfx_FillRectangle(GFX_LCD_WIDTH / 5 * i, GFX_LCD_HEIGHT - 7 * 2 - 1, GFX_LCD_WIDTH / 5, 7 * 2 + 1);
+                gfx_SetColor(GAMEPALETTE_WHITE);
+                gfx_HorizLine(GFX_LCD_WIDTH / 5 * i + 1, GFX_LCD_HEIGHT - 7 * 2 - 2, GFX_LCD_WIDTH / 5 - 2);
+                gfx_VertLine(GFX_LCD_WIDTH / 5 * i, GFX_LCD_HEIGHT - 7 * 2 - 1, 7 * 2 + 1);
+                gfx_VertLine(GFX_LCD_WIDTH / 5 * (i + 1) - 1, GFX_LCD_HEIGHT - 7 * 2 - 1, 7 * 2 + 1);
+                if (*CONTROL_TEXT[i][0] && *CONTROL_TEXT[i][1]) {
+                        fontlib_SetFont(font6x6, 0);
+                        fontlib_SetCursorPosition(GFX_LCD_WIDTH / 5 * i + GFX_LCD_WIDTH / 10 - fontlib_GetStringWidth(CONTROL_TEXT[i][0]) / 2, GFX_LCD_HEIGHT - 7 * 2);
+                        fontlib_DrawString(CONTROL_TEXT[i][0]);
+                        fontlib_SetCursorPosition(GFX_LCD_WIDTH / 5 * i + GFX_LCD_WIDTH / 10 - fontlib_GetStringWidth(CONTROL_TEXT[i][1]) / 2, GFX_LCD_HEIGHT - 7);
+                        fontlib_DrawString(CONTROL_TEXT[i][1]);
+                }else if (*CONTROL_TEXT[i][0]) {
+                        fontlib_SetFont(font6x8, 0);
+                        fontlib_SetCursorPosition(GFX_LCD_WIDTH / 5 * i + GFX_LCD_WIDTH / 10 - fontlib_GetStringWidth(CONTROL_TEXT[i][0]) / 2, GFX_LCD_HEIGHT - 7 * 2);
+                        fontlib_DrawString(CONTROL_TEXT[i][0]);
+                }else if (*CONTROL_TEXT[i][1]) {
+                        fontlib_SetFont(font6x8, 0);
+                        fontlib_SetCursorPosition(GFX_LCD_WIDTH / 5 * i + GFX_LCD_WIDTH / 10 - fontlib_GetStringWidth(CONTROL_TEXT[i][1]) / 2, GFX_LCD_HEIGHT - 15 + 8/2);
+                        fontlib_DrawString(CONTROL_TEXT[i][1]);
+                }
+        }
 
         /* DRAW BLANK LOCATIONS */
         fontlib_SetFont(font8x8, 0);
@@ -321,21 +355,23 @@ int draw(void) {
         /* MOVE COUNTER */
         fontlib_SetCursorPosition(DIM_GAMEINFO_X, DIM_GAMEINFO_Y);
         fontlib_SetFont(font6x8, 0);
-        fontlib_DrawUInt(move_count, 1);
-        fontlib_DrawString(" Moves  ");
         fontlib_DrawUInt(game_secs / 60, 1);
         fontlib_DrawGlyph(':');
         fontlib_DrawUInt(game_secs % 60, 2);
+        fontlib_DrawString("  ");
+        fontlib_DrawUInt(game.move_count, 1);
+        fontlib_DrawString(" Moves  ");
+        fontlib_DrawUInt(game.undo_count, 1);
+        fontlib_DrawString(" Undos  ");
 
         /* SHOW MESSAGE FOR WINNING OR LOSING */
         fontlib_SetFont(font8x8, 0);
-        fontlib_ShiftCursorPosition(12, 0);
         if (game_status == GAME_WON) {
                 fontlib_DrawString("GAME WON!");
         } else if (game_status == GAME_LOST) {
-                fontlib_DrawString("GAME UNSOLVABLE!");
+                fontlib_DrawString("GAME LOST!");
         } else if (game_status == GAME_LOCKED) {
-                fontlib_DrawString("GAME LOCKED!");
+                fontlib_DrawString("LOCK-OUT!");
         }
 #ifdef DEBUG_CURSOR_INFO
         else {
