@@ -46,6 +46,13 @@ struct MoveHistory {
 #define VECTOR_NAME Vector_MoveHistory
 #include "vector.h"
 
+enum KlondikeGameStatus {
+        KlondikeGameStatus_ONGOING,
+        KlondikeGameStatus_WIN,
+        KlondikeGameStatus_LOSS,
+        KlondikeGameStatus_LOCKOUT,
+};
+
 #define TABLEAU_PILES 7
 struct KlondikeGame {
         Vector_Card start_deck;
@@ -61,6 +68,7 @@ struct KlondikeGame {
         unsigned move_count;
         unsigned undo_count;
         clock_t timer;
+        enum KlondikeGameStatus status;
 };
 
 #ifndef ONE_CARD_PER_STOCK_DRAW
@@ -105,3 +113,17 @@ __attribute__((nonnull(1)))
 bool KlondikeGame_is_lost(struct KlondikeGame const *game);
 __attribute__((nonnull(1)))
 bool KlondikeGame_can_make_move(struct KlondikeGame const *game);
+
+__attribute__((nonnull(1)))
+static inline enum KlondikeGameStatus KlondikeGame_check_status(struct KlondikeGame *game) {
+        enum KlondikeGameStatus status = KlondikeGameStatus_ONGOING;
+        if (KlondikeGame_is_won(game)) {
+                status = KlondikeGameStatus_WIN;
+        } else if (!KlondikeGame_can_make_move(game)) {
+                status = KlondikeGameStatus_LOCKOUT;
+        } else if (KlondikeGame_is_lost(game)) {
+                status = KlondikeGameStatus_LOSS;
+        }
+        game->status = status;
+        return status;
+}

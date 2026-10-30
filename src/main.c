@@ -33,12 +33,6 @@ struct {
         bool holding_cards;
         size_t from_pos; // from_pos == CURSOR_WASTE_POS: Waste
 } cursor = {0};
-enum {
-        GAME_ONGOING,
-        GAME_WON,
-        GAME_LOST,
-        GAME_LOCKED,
-} game_status = GAME_ONGOING;
 
 #define CURSOR_WASTE_POS (TABLEAU_PILES)
 #define CURSOR_STOCK_POS (TABLEAU_PILES + 1)
@@ -46,8 +40,8 @@ enum {
 uintmax_t game_secs = 0;
 clock_t game_start = 0;
 
-int errno = 0;
-static int errline = 0;
+int main_errno = 0;
+static int main_errline = 0;
 
 // Implemented in ./main_step.c
 extern int step(void);
@@ -90,99 +84,93 @@ int main(void)
                                         break;
                                 case 1:
                                         if (!KlondikeGame_fread(&game, save)) {
-                                                errno = 5, errline = __LINE__;
+                                                main_errno = 5, main_errline = __LINE__;
                                         } else {
                                                 loaded_save_data = true;
                                         }
                                         break;
                                 default:
-                                        errno = 7, errline = __LINE__;
+                                        main_errno = 7, main_errline = __LINE__;
                                         break;
                         }
                         if (!KlondikeGame_invariants_hold(&game)) {
                                 remove("KLONDIKE");
-                                errno = 4, errline = __LINE__;
+                                main_errno = 4, main_errline = __LINE__;
                         }
                 open_save_error:;
                         if (fclose(save) == EOF) {
-                                errno = errno ? errno : 6, errline = __LINE__;
+                                main_errno = main_errno ? main_errno : 6, main_errline = __LINE__;
                         }
                 }
         }
-        if (!loaded_save_data && !errno) {
+        if (!loaded_save_data && !main_errno) {
                 if (!KlondikeGame_init(&game)) {
-                        errno = 1, errline = __LINE__;
+                        main_errno = 1, main_errline = __LINE__;
                 }
         }
 
-        if (!errno) {
-                if (KlondikeGame_is_won(&game)) {
-                        game_status = GAME_WON;
-                } else if (!KlondikeGame_can_make_move(&game)) {
-                        game_status = GAME_LOCKED;
-                } else if (KlondikeGame_is_lost(&game)) {
-                        game_status = GAME_LOST;
-                }
-        }
+        if (!main_errno)
+                KlondikeGame_check_status(&game);
 
         game_start = clock();
+        game_secs = (uintmax_t)(game.timer / CLOCKS_PER_SEC);
         bool save_and_quit = false;
-        while (!errno && !kb_On) {
+        while (!main_errno && !kb_On) {
                 if (kb_IsDown(kb_KeyZoom)) {
                         save_and_quit = true;
                         break;
                 }
-                errline = step();
-                if (errline) {
-                        errno = errno ? errno : 2;
-                        if (errno == 4)
+                main_errline = step();
+                if (main_errline) {
+                        main_errno = main_errno ? main_errno : 2;
+                        if (main_errno == 4)
                                 draw();
                         break;
                 }
-                errline = draw();
-                if (errline) {
-                        errno = errno ? errno : 3;
+                main_errline = draw();
+                if (main_errline) {
+                        main_errno = main_errno ? main_errno : 3;
                         break;
                 }
         }
-        if (save_and_quit && !errno) {
+        if (save_and_quit && !main_errno) {
                 game.timer += clock() - game_start;
                 FILE *save = fopen("KLONDIKE", "w");
                 if (!save) {
-                        errno = 5, errline = __LINE__;
+                        main_errno = 5, main_errline = __LINE__;
                 } else {
                         if (fwrite("KLONDIKE\n\1", sizeof(char), 10, save) != 10) {
-                                errno = 5, errline = __LINE__;
+                                main_errno = 5, main_errline = __LINE__;
                                 goto save_and_quit_error;
                         }
                         if (!KlondikeGame_fwrite(&game, save)) {
-                                errno = 5, errline = __LINE__;
+                                main_errno = 5, main_errline = __LINE__;
                                 goto save_and_quit_error;
                         }
                 save_and_quit_error:;
                         if (fclose(save) == EOF) {
-                                errno = 6, errline = errline ? errline : __LINE__;
+                                main_errno = 6, main_errline = main_errline ? main_errline : __LINE__;
                         }
                 }
-        } else if (!errno) {
+        } else if (!main_errno) {
                 FILE *save = fopen("KLONDIKE", "w");
                 if (!save) {
-                        errno = 5, errline = __LINE__;
+                        main_errno = 5, main_errline = __LINE__;
                 } else {
                         if (fwrite("KLONDIKE\n\0", sizeof(char), 10, save) != 10) {
-                                errno = 5, errline = __LINE__;
+                                main_errno = 5, main_errline = __LINE__;
                         }
                         if (fclose(save) == EOF) {
-                                errno = 6, errline = __LINE__;
+                                main_errno = 6, main_errline = __LINE__;
                         }
                 }
         }
 
-        if (errno) {
-                error_screen(errno, errline);
+        if (main_errno) {
+                error_screen(main_errno, main_errline);
         }
 
-        if (!errno || errno > 1) {
+        if (!main_errno || main_errno > 1) {
                 KlondikeGame_free(&game);
         }
 
@@ -190,5 +178,5 @@ int main(void)
         while (kb_AnyKey()) {
                 // Wait for key to be released
         }
-        return errno ? 1 : 0;
+        return main_errno ? 1 : 0;
 }

@@ -49,6 +49,8 @@ bool KlondikeGame_fread(struct KlondikeGame *restrict game, FILE *restrict strea
                 return false;
         if (fread(&game->timer, sizeof(game->timer), 1, stream) != 1)
                 return false;
+        if (fread(&game->status, sizeof(game->status), 1, stream) != 1)
+                return false;
         return true;
 }
 

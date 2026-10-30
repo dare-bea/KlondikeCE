@@ -12,6 +12,6 @@ bool KlondikeGame_fread(struct KlondikeGame *restrict game, FILE *restrict strea
 
 bool Vector_Card_fwrite(Vector_Card const *restrict this, FILE *restrict stream);
 
-bool Vector_MoveHistory_fwrite(Vector_Card const *restrict this, FILE *restrict stream);
+bool Vector_MoveHistory_fwrite(Vector_MoveHistory const *restrict this, FILE *restrict stream);
 
 bool KlondikeGame_fwrite(struct KlondikeGame *restrict game, FILE *restrict stream);

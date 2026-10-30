@@ -108,6 +108,8 @@ bool _KlondikeGame_attempt_init(struct KlondikeGame *game) {
                         ? game->tableau_piles[i].length - 1 : 0;
         }
         game->stock_remaining = game->stock_waste.length;
+        game->timer = 0;
+        game->status = KlondikeGameStatus_ONGOING;
         return true;
 }
 
@@ -543,6 +545,7 @@ int8_t KlondikeGame_move_tt(struct KlondikeGame *game, size_t from_pile, size_t 
         }))
                 return -2;
         ++game->move_count;
+        KlondikeGame_check_status(game);
         return 1;
 }
 
@@ -561,6 +564,7 @@ int8_t KlondikeGame_move_wt(struct KlondikeGame *game, size_t to_pile) {
         }))
                 return -2;
         ++game->move_count;
+        KlondikeGame_check_status(game);
         return 1;
 }
 
@@ -583,6 +587,7 @@ int8_t KlondikeGame_move_tf(struct KlondikeGame *game, size_t from_pile) {
         }))
                 return -2;
         ++game->move_count;
+        KlondikeGame_check_status(game);
         return 1;
 }
 
@@ -601,6 +606,7 @@ int8_t KlondikeGame_move_wf(struct KlondikeGame *game) {
         }))
                 return -2;
         ++game->move_count;
+        KlondikeGame_check_status(game);
         return 1;
 }
 
@@ -619,6 +625,7 @@ static inline bool KlondikeGame_undo_move_tt(struct KlondikeGame *game, struct M
                 card_array, last_move.move_tt.card_count))
                 return false;
         game->tableau_piles[last_move.move_tt.to_pile].length -= last_move.move_tt.card_count;
+        KlondikeGame_check_status(game);
         return true;
 }
 
@@ -640,6 +647,7 @@ static inline bool KlondikeGame_undo_move_tf(struct KlondikeGame *game, struct M
         } else {
                 --game->foundations[last_move.move_tf.suit].top_rank;
         }
+        KlondikeGame_check_status(game);
         return true;
 }
 
@@ -652,6 +660,7 @@ static inline bool KlondikeGame_undo_move_wt(struct KlondikeGame *game, struct M
         if (!Vector_Card_insert(&game->stock_waste, last_move.stock_remaining, *card))
                 return false;
         --game->tableau_piles[last_move.move_wt.to_pile].length;
+        KlondikeGame_check_status(game);
         return true;
 }
 
@@ -670,6 +679,7 @@ static inline bool KlondikeGame_undo_move_wf(struct KlondikeGame *game, struct M
         } else {
                 --game->foundations[last_move.move_tf.suit].top_rank;
         }
+        KlondikeGame_check_status(game);
         return true;
 }
 

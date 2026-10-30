@@ -10,19 +10,13 @@ extern struct {
         bool holding_cards;
         size_t from_pos; // from_pos == CURSOR_WASTE_POS: Waste
 } cursor;
-extern enum {
-        GAME_ONGOING,
-        GAME_WON,
-        GAME_LOST,
-        GAME_LOCKED,
-} game_status;
 
 #define CURSOR_WASTE_POS (TABLEAU_PILES)
 #define CURSOR_STOCK_POS (TABLEAU_PILES + 1)
 
 extern uintmax_t game_secs;
 extern clock_t game_start;
-extern int errno;
+extern int main_errno;
 
 #define INPUT_KEYS_COUNT 8
 enum InputKeyIndex {
@@ -58,7 +52,7 @@ int step(void) {
                         new_keys[i] = pressed;
                 }
         }
-        if (game_status == GAME_ONGOING) {
+        if (game.status == KlondikeGameStatus_ONGOING) {
                 game_secs = (uintmax_t)((game.timer + now - game_start) / CLOCKS_PER_SEC);
         }
         if (new_keys[IKIdx_Enter] || new_keys[IKIdx_Graph]) {
@@ -68,7 +62,7 @@ int step(void) {
                                 if (move_res > 0) {
                                         // ++move_count;
                                 if (!KlondikeGame_invariants_hold(&game)) {
-                                        errno = 4;
+                                        main_errno = 4;
                                         return __LINE__;
                                 }
                                 } else if (move_res < 0) {
@@ -87,15 +81,8 @@ int step(void) {
                                 &game, cursor.from_pos, cursor.pos);
                         if (move_res > 0) {
                                 cursor.holding_cards = false;
-                                if (KlondikeGame_is_won(&game)) {
-                                        game_status = GAME_WON;
-                                } else if (!KlondikeGame_can_make_move(&game)) {
-                                        game_status = GAME_LOCKED;
-                                } else if (KlondikeGame_is_lost(&game)) {
-                                        game_status = GAME_LOST;
-                                }
                                 if (!KlondikeGame_invariants_hold(&game)) {
-                                        errno = 4;
+                                        main_errno = 4;
                                         return __LINE__;
                                 }
                         } else if (move_res < 0) {
@@ -106,15 +93,8 @@ int step(void) {
                                 &game, cursor.pos);
                         if (move_res > 0) {
                                 cursor.holding_cards = false;
-                                if (KlondikeGame_is_won(&game)) {
-                                        game_status = GAME_WON;
-                                } else if (!KlondikeGame_can_make_move(&game)) {
-                                        game_status = GAME_LOCKED;
-                                } else if (KlondikeGame_is_lost(&game)) {
-                                        game_status = GAME_LOST;
-                                }
                                 if (!KlondikeGame_invariants_hold(&game)) {
-                                        errno = 4;
+                                        main_errno = 4;
                                         return __LINE__;
                                 }
                         } else if (move_res < 0) {
@@ -131,15 +111,8 @@ int step(void) {
                         int8_t move_res = KlondikeGame_move_wf(&game);
                         if (move_res > 0) {
                                 cursor.holding_cards = false;
-                                if (KlondikeGame_is_won(&game)) {
-                                        game_status = GAME_WON;
-                                } else if (!KlondikeGame_can_make_move(&game)) {
-                                        game_status = GAME_LOCKED;
-                                } else if (KlondikeGame_is_lost(&game)) {
-                                        game_status = GAME_LOST;
-                                }
                                 if (!KlondikeGame_invariants_hold(&game)) {
-                                        errno = 4;
+                                        main_errno = 4;
                                         return __LINE__;
                                 }
                         } else if (move_res < 0) {
@@ -155,15 +128,8 @@ int step(void) {
                 } else {
                         int8_t move_res = KlondikeGame_move_tf(&game, pos);
                         if (move_res > 0) {
-                                if (KlondikeGame_is_won(&game)) {
-                                        game_status = GAME_WON;
-                                } else if (!KlondikeGame_can_make_move(&game)) {
-                                        game_status = GAME_LOCKED;
-                                } else if (KlondikeGame_is_lost(&game)) {
-                                        game_status = GAME_LOST;
-                                }
                                 if (!KlondikeGame_invariants_hold(&game)) {
-                                        errno = 4;
+                                        main_errno = 4;
                                         return __LINE__;
                                 }
                         } else if (move_res < 0) {
@@ -189,7 +155,7 @@ int step(void) {
                 if (move_res > 0) {
                         // ++move_count;
                         if (!KlondikeGame_invariants_hold(&game)) {
-                                errno = 4;
+                                main_errno = 4;
                                 return __LINE__;
                         }
                 } else if (move_res < 0) {
@@ -207,20 +173,11 @@ int step(void) {
                 else
                         cursor.pos = 0;
         }
-        if (new_keys[IKIdx_Trace] && game_status != GAME_WON) {
+        if (new_keys[IKIdx_Trace] && game.status != KlondikeGameStatus_WIN) {
                 int8_t move_res = KlondikeGame_undo_move(&game);
                 if (move_res > 0) {
-                        if (KlondikeGame_is_won(&game)) {
-                                game_status = GAME_WON;
-                        } else if (!KlondikeGame_can_make_move(&game)) {
-                                game_status = GAME_LOCKED;
-                        } else if (KlondikeGame_is_lost(&game)) {
-                                game_status = GAME_LOST;
-                        } else {
-                                game_status = GAME_ONGOING;
-                        }
                         if (!KlondikeGame_invariants_hold(&game)) {
-                                errno = 4;
+                                main_errno = 4;
                                 return __LINE__;
                         }
                 } else if (move_res < 0) {

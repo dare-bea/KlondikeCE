@@ -13,12 +13,6 @@ extern struct {
         bool holding_cards;
         size_t from_pos; // from_pos == CURSOR_WASTE_POS: Waste
 } cursor;
-extern enum {
-        GAME_ONGOING,
-        GAME_WON,
-        GAME_LOST,
-        GAME_LOCKED,
-} game_status;
 
 #define CURSOR_WASTE_POS (TABLEAU_PILES)
 #define CURSOR_STOCK_POS (TABLEAU_PILES + 1)
@@ -95,7 +89,7 @@ int draw(void) {
         fontlib_SetLineSpacing(0, 1);
         fontlib_SetWindow(DIM_CONTROLINFO_X, DIM_CONTROLINFO_Y, GFX_LCD_WIDTH - DIM_CONTROLINFO_X, GFX_LCD_HEIGHT - DIM_CONTROLINFO_Y);
         fontlib_SetCursorPosition(DIM_CONTROLINFO_X, DIM_CONTROLINFO_Y);
-        if (game_status != GAME_WON)
+        if (game.status != KlondikeGameStatus_WIN)
                 fontlib_DrawString(
                         "ARROW: Move cursor\n"
                         "CLEAR: Put back cards\n"
@@ -114,7 +108,7 @@ int draw(void) {
                 {{0}, "UNDO MOVE"},
                 {{0}, {0}},
         };
-        if (!game.move_history.length || game_status == GAME_WON)
+        if (!game.move_history.length || game.status == KlondikeGameStatus_WIN)
                 memset(CONTROL_TEXT[3], 0, sizeof(CONTROL_TEXT[3]));
         strncpy(CONTROL_TEXT[4][1], !cursor.holding_cards ? (
                 cursor.pos == CURSOR_STOCK_POS ? "DRAW CARDS"
@@ -374,11 +368,11 @@ int draw(void) {
 
         /* SHOW MESSAGE FOR WINNING OR LOSING */
         fontlib_SetFont(font8x8, 0);
-        if (game_status == GAME_WON) {
+        if (game.status == KlondikeGameStatus_WIN) {
                 fontlib_DrawString("GAME WON!");
-        } else if (game_status == GAME_LOST) {
+        } else if (game.status == KlondikeGameStatus_LOSS) {
                 fontlib_DrawString("GAME LOST!");
-        } else if (game_status == GAME_LOCKED) {
+        } else if (game.status == KlondikeGameStatus_LOCKOUT) {
                 fontlib_DrawString("LOCKOUT!");
         }
 #ifdef DEBUG_CURSOR_INFO
